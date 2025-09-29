@@ -1,6 +1,6 @@
-import connectDB from '../config/database.js';
-import { databaseSeeder } from './seeder.js';
-import { logInfo, logError } from './logger.js';
+import connectDB from '../config/database';
+import { databaseSeeder } from './seeder';
+import { logInfo, logError } from './logger';
 
 async function clearDatabase() {
   try {

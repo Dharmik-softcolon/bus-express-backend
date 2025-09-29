@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
-import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler.js';
-import { UserService } from '../services/userService.js';
-import { BusService } from '../services/busService.js';
-import { RouteService } from '../services/routeService.js';
-import { BookingService } from '../services/bookingService.js';
-import { API_MESSAGES } from '../constants/index';
-import { logError } from '../utils/logger.js';
+import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
+import { UserService } from '../services/userService';
+import { BusService } from '../services/busService';
+import { RouteService } from '../services/routeService';
+import { BookingService } from '../services/bookingService';
+import { API_MESSAGES } from '../constants';
+import { logError } from '../utils/logger';
+import { AuthenticatedRequest } from '../types';
 
 const userService = new UserService();
 const busService = new BusService();
@@ -64,7 +65,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 // Get current user profile
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const user = await userService.getUserById(req.user?.id || '');
+    const authenticatedReq = req as AuthenticatedRequest;
+    const user = await userService.getUserById(authenticatedReq.user?.id || '');
     
     if (!user) {
       return sendNotFound(res, 'User not found');
@@ -94,7 +96,8 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { name, phone, address } = req.body;
-    const userId = req.user?.id || '';
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id || '';
 
     const updatedUser = await userService.updateUser(userId, { name, phone, address });
 
@@ -118,7 +121,8 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user?.id || '';
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id || '';
 
     await userService.changePassword(userId, currentPassword, newPassword);
 
@@ -132,9 +136,10 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
 // Get all users (Admin only)
 export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const page = req.pagination?.page || 1;
-    const limit = req.pagination?.limit || 10;
-    const skip = req.pagination?.skip || 0;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const page = authenticatedReq.pagination?.page || 1;
+    const limit = authenticatedReq.pagination?.limit || 10;
+    const skip = authenticatedReq.pagination?.skip || 0;
 
     const { role, isActive, search } = req.query;
 

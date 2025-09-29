@@ -1,7 +1,7 @@
 // Export all validation functions
-export * from './authValidation.js';
-export * from './busValidation.js';
-export * from './routeValidation.js';
-export * from './bookingValidation.js';
-export * from './commonValidation.js';
+export * from './authValidation';
+export * from './busValidation';
+export * from './routeValidation';
+export * from './bookingValidation';
+export * from './commonValidation';
 

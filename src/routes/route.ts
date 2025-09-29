@@ -10,9 +10,9 @@ import {
   addStopToRoute,
   removeStopFromRoute,
   updateRouteStatus,
-} from '../controllers/routeController.js';
-import { authenticate, adminOnly } from '../middleware/auth.js';
-import { validateRequest, paginationMiddleware } from '../middleware/validation.js';
+} from '../controllers/routeController';
+import { authenticate, adminOnly } from '../middleware/auth';
+import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createRouteValidation,
   getAllRoutesValidation,
@@ -24,7 +24,7 @@ import {
   addStopToRouteValidation,
   removeStopFromRouteValidation,
   updateRouteStatusValidation,
-} from '../validations/routeValidation.js';
+} from '../validations/routeValidation';
 
 const router = Router();
 

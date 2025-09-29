@@ -1,8 +1,8 @@
-import { Booking, IBooking } from '../models/Booking.js';
-import { Bus } from '../models/Bus.js';
-import { Route } from '../models/Route.js';
-import { BOOKING_STATUS, PAYMENT_STATUS } from "../constants/index";
-import { generateBookingReference } from '../utils/auth.js';
+import { Booking, IBooking } from '../models/Booking';
+import { Bus } from '../models/Bus';
+import { Route } from '../models/Route';
+import { BOOKING_STATUS, PAYMENT_STATUS } from '../constants';
+import { generateBookingReference } from '../utils/auth';
 
 export interface CreateBookingData {
   bus: string;

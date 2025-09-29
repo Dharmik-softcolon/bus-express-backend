@@ -4,13 +4,13 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 
-import config from './config/config.js';
-import connectDB from './config/database.js';
-import routes from './routes/index.js';
-import { globalErrorHandler } from './utils/responseHandler.js';
-import { corsMiddleware, requestLogger, securityHeaders } from './middleware/validation.js';
-import { morganStream, errorLogger } from './utils/logger.js';
-import { setupHealthRoutes } from './services/healthService.js';
+import config from './config/config';
+import connectDB from './config/database';
+import routes from './routes/index';
+import { globalErrorHandler } from './utils/responseHandler';
+import { corsMiddleware, requestLogger, securityHeaders } from './middleware/validation';
+import logger, { morganStream, errorLogger } from './utils/logger';
+import { setupHealthRoutes } from './services/healthService';
 
 const app = express();
 
@@ -87,7 +87,9 @@ app.use(globalErrorHandler);
 const PORT = config.common.PORT || 5005;
 
 const server = app.listen(PORT, () => {
-  console.log(`Server running in ${config.common.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`Server running in ${config.common.NODE_ENV || 'development'} with port ${PORT}`);
+  console.log(`Server Url: http://localhost:3000`);
+
 });
 
 // Handle unhandled promise rejections

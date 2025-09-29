@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
-import { User } from '../models/User.js';
-import { Bus } from '../models/Bus.js';
-import { Route } from '../models/Route.js';
-import { Booking } from '../models/Booking.js';
-import { hashPassword } from '../utils/auth.js';
-import { USER_ROLES, BUS_STATUS, BOOKING_STATUS, PAYMENT_STATUS } from '../constants/index';
-import { logInfo, logError } from './logger.js';
+import { User } from '../models/User';
+import { Bus } from '../models/Bus';
+import { Route } from '../models/Route';
+import { Booking } from '../models/Booking';
+import { hashPassword } from '../utils/auth';
+import { USER_ROLES, BUS_STATUS, BOOKING_STATUS, PAYMENT_STATUS } from '../constants';
+import { logInfo, logError } from './logger';
 
 export class DatabaseSeeder {
   async seedUsers(): Promise<void> {

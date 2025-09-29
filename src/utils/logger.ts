@@ -1,6 +1,6 @@
 import winston from 'winston';
 import path from 'path';
-import config from '../config/config.js';
+import config from '../config/config';
 
 // Define log levels
 const levels = {

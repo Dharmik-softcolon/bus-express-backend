@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import config from './config.js';
+import config from './config';
 
 const connectDB = async (): Promise<void> => {
   try {
@@ -10,10 +10,10 @@ const connectDB = async (): Promise<void> => {
       throw new Error(`Invalid MongoDB URI format: ${mongoURI}. Must start with 'mongodb://' or 'mongodb+srv://'`);
     }
     
-    console.log('Connecting to MongoDB...');
+    console.log('Started connecting to MongoDB');
     const conn = await mongoose.connect(mongoURI);
     
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`MONGODB CONNECTED: ${conn.connection.host}`);
   } catch (error) {
     console.error('Database connection error:', error);
     console.error('Please check:');

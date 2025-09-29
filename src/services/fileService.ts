@@ -1,8 +1,8 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import config from '../config/config.js';
-import { logError, logInfo } from '../utils/logger.js';
+import config from '../config/config';
+import { logError, logInfo } from '../utils/logger';
 
 // Ensure uploads directory exists
 const uploadDir = config.fileUpload.UPLOAD_PATH || 'uploads';

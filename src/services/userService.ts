@@ -1,7 +1,7 @@
-import { User, IUser } from '../models/User.js';
-import { hashPassword, comparePassword, generateToken, generateRefreshToken } from '../utils/auth.js';
-import config from '../config/config.js';
-import { USER_ROLES } from '../constants/index.js';
+import { User, IUser } from '../models/User';
+import { hashPassword, comparePassword, generateToken, generateRefreshToken } from '../utils/auth';
+import config from '../config/config';
+import { USER_ROLES } from '../constants';
 
 export interface CreateUserData {
   name: string;

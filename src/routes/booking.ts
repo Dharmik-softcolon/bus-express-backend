@@ -7,9 +7,9 @@ import {
   updateBookingStatus,
   cancelBooking,
   getBookingStatistics,
-} from '../controllers/bookingController.js';
-import { authenticate, authorize, operatorOrAdmin } from '../middleware/auth.js';
-import { validateRequest, paginationMiddleware } from '../middleware/validation.js';
+} from '../controllers/bookingController';
+import { authenticate, authorize, operatorOrAdmin } from '../middleware/auth';
+import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createBookingValidation,
   getAllBookingsValidation,
@@ -18,7 +18,7 @@ import {
   updateBookingStatusValidation,
   cancelBookingValidation,
   getBookingStatisticsValidation,
-} from '../validations/bookingValidation.js';
+} from '../validations/bookingValidation';
 
 const router = Router();
 

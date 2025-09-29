@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import config from '../config/config.js';
-import { HTTP_STATUS, API_MESSAGES } from '../constants/index.js';
+import config from '../config/config';
+import { HTTP_STATUS, API_MESSAGES } from '../constants';
 
 // Success response utility
 export const sendSuccess = (

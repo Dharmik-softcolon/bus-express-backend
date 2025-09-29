@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import config from '../config/config.js';
-import { logInfo, logError } from '../utils/logger.js';
+import config from '../config/config';
+import { logInfo, logError } from '../utils/logger';
 
 export class HealthService {
   async checkDatabase(): Promise<{ status: string; details: any }> {

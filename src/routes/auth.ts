@@ -10,9 +10,9 @@ import {
   updateUserById,
   deleteUser,
   refreshToken,
-} from '../controllers/authController.js';
-import { authenticate, authorize, adminOnly } from '../middleware/auth.js';
-import { validateRequest, paginationMiddleware } from '../middleware/validation.js';
+} from '../controllers/authController';
+import { authenticate, authorize, adminOnly } from '../middleware/auth';
+import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   registerValidation,
   loginValidation,
@@ -24,7 +24,7 @@ import {
   updateUserByIdValidation,
   deleteUserValidation,
   refreshTokenValidation,
-} from '../validations/authValidation.js';
+} from '../validations/authValidation';
 
 const router = Router();
 

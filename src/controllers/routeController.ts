@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { Route, IRoute } from '../models/Route.js';
-import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler.js';
-import { API_MESSAGES } from '../constants/index';
-import { calculateDistance } from '../utils/auth.js';
+import { Route, IRoute } from '../models/Route';
+import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
+import { API_MESSAGES } from '../constants';
+import { calculateDistance } from '../utils/auth';
+import { AuthenticatedRequest } from '../types';
 
 // Create route (Admin only)
 export const createRoute = asyncHandler(async (req: Request, res: Response) => {
@@ -48,9 +49,10 @@ export const createRoute = asyncHandler(async (req: Request, res: Response) => {
 
 // Get all routes
 export const getAllRoutes = asyncHandler(async (req: Request, res: Response) => {
-  const page = req.pagination?.page || 1;
-  const limit = req.pagination?.limit || 10;
-  const skip = req.pagination?.skip || 0;
+  const authenticatedReq = req as AuthenticatedRequest;
+  const page = authenticatedReq.pagination?.page || 1;
+  const limit = authenticatedReq.pagination?.limit || 10;
+  const skip = authenticatedReq.pagination?.skip || 0;
 
   const { fromCity, toCity, isActive, search } = req.query;
 

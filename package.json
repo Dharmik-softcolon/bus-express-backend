@@ -3,16 +3,20 @@
   "version": "1.0.0",
   "description": "Bus Express Backend API with TypeScript",
   "main": "dist/server.js",
-  "type": "module",
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon",
     "build": "tsc",
-    "test": "jest",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "seed": "node --loader ts-node/esm --experimental-specifier-resolution=node --no-warnings src/utils/seed.ts",
-    "seed:clear": "node --loader ts-node/esm --experimental-specifier-resolution=node --no-warnings src/utils/clearData.ts"
+    "seed": "ts-node src/utils/seed.ts",
+    "seed:clear": "ts-node src/utils/clearData.ts",
+    "setup": "bash scripts/setup-dev.sh",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "clean:all": "npm run clean && rm -rf node_modules && rm -rf logs",
+    "prebuild": "npm run clean && npm run type-check",
+    "postbuild": "echo 'Build completed successfully'"
   },
   "keywords": [
     "bus",

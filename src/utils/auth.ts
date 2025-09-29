@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import config from '../config/config.js';
-import { USER_ROLES } from '../constants/index.js';
+import config from '../config/config';
+import { USER_ROLES } from '../constants';
 
 // Hash password
 export const hashPassword = async (password: string): Promise<string> => {

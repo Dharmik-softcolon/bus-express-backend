@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { USER_ROLES } from '../constants/index';
+import { USER_ROLES } from '../constants';
 
 // User interface
 export interface IUser extends Document {

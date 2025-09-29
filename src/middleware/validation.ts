@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
-import config from '../config/config.js';
-import { sendBadRequest } from '../utils/responseHandler.js';
+import config from '../config/config';
+import { sendBadRequest } from '../utils/responseHandler';
+import { AuthenticatedRequest } from '../types';
 
 // Validation middleware
 export const validateRequest = (req: Request, res: Response, next: NextFunction): void => {
@@ -128,7 +129,7 @@ export const paginationMiddleware = (req: Request, res: Response, next: NextFunc
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
   
-  req.pagination = {
+  (req as AuthenticatedRequest).pagination = {
     page: Math.max(1, page),
     limit: Math.min(100, Math.max(1, limit)),
     skip,
@@ -136,19 +137,6 @@ export const paginationMiddleware = (req: Request, res: Response, next: NextFunc
   
   next();
 };
-
-// Extend Request interface for pagination
-declare global {
-  namespace Express {
-    interface Request {
-      pagination?: {
-        page: number;
-        limit: number;
-        skip: number;
-      };
-    }
-  }
-}
 
 // Extend global namespace for rate limiting
 declare global {

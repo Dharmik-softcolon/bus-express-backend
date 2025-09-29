@@ -8,9 +8,9 @@ import {
   getBusesByOperator,
   updateBusStatus,
   getBusStatistics,
-} from '../controllers/busController.js';
-import { authenticate, authorize, operatorOrAdmin } from '../middleware/auth.js';
-import { validateRequest, paginationMiddleware } from '../middleware/validation.js';
+} from '../controllers/busController';
+import { authenticate, authorize, operatorOrAdmin } from '../middleware/auth';
+import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createBusValidation,
   getAllBusesValidation,
@@ -20,7 +20,7 @@ import {
   getBusesByOperatorValidation,
   updateBusStatusValidation,
   getBusStatisticsValidation,
-} from '../validations/busValidation.js';
+} from '../validations/busValidation';
 
 const router = Router();
 

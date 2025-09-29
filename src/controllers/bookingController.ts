@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
-import { Booking, IBooking } from '../models/Booking.js';
-import { Bus } from '../models/Bus.js';
-import { Route } from '../models/Route.js';
-import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler.js';
-import { API_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS } from '../constants/index';
-import { generateBookingReference } from '../utils/auth.js';
+import { Booking, IBooking } from '../models/Booking';
+import { Bus } from '../models/Bus';
+import { Route } from '../models/Route';
+import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
+import { API_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS } from '../constants';
+import { generateBookingReference } from '../utils/auth';
+import { AuthenticatedRequest } from '../types';
 
 // Create booking
 export const createBooking = asyncHandler(async (req: Request, res: Response) => {
@@ -18,7 +19,8 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     paymentMethod,
   } = req.body;
 
-  const userId = req.user?.id;
+  const authenticatedReq = req as AuthenticatedRequest;
+  const userId = authenticatedReq.user?.id;
 
   // Validate bus exists
   const busData = await Bus.findById(bus);
@@ -98,9 +100,10 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
 
 // Get all bookings
 export const getAllBookings = asyncHandler(async (req: Request, res: Response) => {
-  const page = req.pagination?.page || 1;
-  const limit = req.pagination?.limit || 10;
-  const skip = req.pagination?.skip || 0;
+  const authenticatedReq = req as AuthenticatedRequest;
+  const page = authenticatedReq.pagination?.page || 1;
+  const limit = authenticatedReq.pagination?.limit || 10;
+  const skip = authenticatedReq.pagination?.skip || 0;
 
   const { status, paymentStatus, userId, busId, routeId } = req.query;
 
@@ -113,8 +116,8 @@ export const getAllBookings = asyncHandler(async (req: Request, res: Response) =
   if (routeId) filter.route = routeId;
 
   // If user is not admin, only show their bookings
-  if (req.user?.role !== 'admin') {
-    filter.user = req.user?.id;
+  if (authenticatedReq.user?.role !== 'admin') {
+    filter.user = authenticatedReq.user?.id;
   }
 
   const bookings = await Booking.find(filter)
@@ -143,6 +146,7 @@ export const getAllBookings = asyncHandler(async (req: Request, res: Response) =
 // Get booking by ID
 export const getBookingById = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const authenticatedReq = req as AuthenticatedRequest;
 
   const booking = await Booking.findById(id).populate([
     { path: 'user', select: 'name email phone' },
@@ -155,7 +159,7 @@ export const getBookingById = asyncHandler(async (req: Request, res: Response) =
   }
 
   // Check if user can access this booking
-  if (req.user?.role !== 'admin' && booking.user._id.toString() !== req.user?.id) {
+  if (authenticatedReq.user?.role !== 'admin' && booking.user._id.toString() !== authenticatedReq.user?.id) {
     return sendBadRequest(res, 'You can only view your own bookings');
   }
 
@@ -165,6 +169,7 @@ export const getBookingById = asyncHandler(async (req: Request, res: Response) =
 // Get booking by reference
 export const getBookingByReference = asyncHandler(async (req: Request, res: Response) => {
   const { reference } = req.params;
+  const authenticatedReq = req as AuthenticatedRequest;
 
   const booking = await Booking.findOne({ bookingReference: reference }).populate([
     { path: 'user', select: 'name email phone' },
@@ -177,7 +182,7 @@ export const getBookingByReference = asyncHandler(async (req: Request, res: Resp
   }
 
   // Check if user can access this booking
-  if (req.user?.role !== 'admin' && booking.user._id.toString() !== req.user?.id) {
+  if (authenticatedReq.user?.role !== 'admin' && booking.user._id.toString() !== authenticatedReq.user?.id) {
     return sendBadRequest(res, 'You can only view your own bookings');
   }
 
@@ -188,6 +193,7 @@ export const getBookingByReference = asyncHandler(async (req: Request, res: Resp
 export const updateBookingStatus = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { bookingStatus, paymentStatus } = req.body;
+  const authenticatedReq = req as AuthenticatedRequest;
 
   const booking = await Booking.findById(id);
 
@@ -196,9 +202,9 @@ export const updateBookingStatus = asyncHandler(async (req: Request, res: Respon
   }
 
   // Check if user can update this booking
-  if (req.user?.role !== 'admin') {
+  if (authenticatedReq.user?.role !== 'admin') {
     const bus = await Bus.findById(booking.bus);
-    if (!bus || bus.operator.toString() !== req.user?.id) {
+    if (!bus || bus.operator.toString() !== authenticatedReq.user?.id) {
       return sendBadRequest(res, 'You can only update bookings for your buses');
     }
   }
@@ -220,6 +226,7 @@ export const updateBookingStatus = asyncHandler(async (req: Request, res: Respon
 export const cancelBooking = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { cancellationReason } = req.body;
+  const authenticatedReq = req as AuthenticatedRequest;
 
   const booking = await Booking.findById(id);
 
@@ -228,7 +235,7 @@ export const cancelBooking = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Check if user can cancel this booking
-  if (req.user?.role !== 'admin' && booking.user.toString() !== req.user?.id) {
+  if (authenticatedReq.user?.role !== 'admin' && booking.user.toString() !== authenticatedReq.user?.id) {
     return sendBadRequest(res, 'You can only cancel your own bookings');
   }
 

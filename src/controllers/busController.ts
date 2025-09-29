@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler.js';
-import { BusService } from '../services/busService.js';
-import { API_MESSAGES } from '../constants/index';
-import { logError } from '../utils/logger.js';
+import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
+import { BusService } from '../services/busService';
+import { API_MESSAGES } from '../constants';
+import { logError } from '../utils/logger';
+import { AuthenticatedRequest } from '../types';
 
 const busService = new BusService();
 
@@ -10,7 +11,8 @@ const busService = new BusService();
 export const createBus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const busData = req.body;
-    const operatorId = req.user?.id || '';
+    const authenticatedReq = req as AuthenticatedRequest;
+    const operatorId = authenticatedReq.user?.id || '';
 
     const bus = await busService.createBus(busData, operatorId);
 
@@ -24,9 +26,10 @@ export const createBus = asyncHandler(async (req: Request, res: Response) => {
 // Get all buses
 export const getAllBuses = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const page = req.pagination?.page || 1;
-    const limit = req.pagination?.limit || 10;
-    const skip = req.pagination?.skip || 0;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const page = authenticatedReq.pagination?.page || 1;
+    const limit = authenticatedReq.pagination?.limit || 10;
+    const skip = authenticatedReq.pagination?.skip || 0;
 
     const { type, status, operator, search } = req.query;
 
@@ -73,8 +76,9 @@ export const updateBus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    const userId = req.user?.id || '';
-    const userRole = req.user?.role || '';
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id || '';
+    const userRole = authenticatedReq.user?.role || '';
 
     const updatedBus = await busService.updateBus(id, updateData, userId, userRole);
 
@@ -93,8 +97,9 @@ export const updateBus = asyncHandler(async (req: Request, res: Response) => {
 export const deleteBus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id || '';
-    const userRole = req.user?.role || '';
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id || '';
+    const userRole = authenticatedReq.user?.role || '';
 
     await busService.deleteBus(id, userId, userRole);
 
@@ -109,9 +114,10 @@ export const deleteBus = asyncHandler(async (req: Request, res: Response) => {
 export const getBusesByOperator = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { operatorId } = req.params;
-    const page = req.pagination?.page || 1;
-    const limit = req.pagination?.limit || 10;
-    const skip = req.pagination?.skip || 0;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const page = authenticatedReq.pagination?.page || 1;
+    const limit = authenticatedReq.pagination?.limit || 10;
+    const skip = authenticatedReq.pagination?.skip || 0;
 
     const result = await busService.getBusesByOperator(operatorId, { page, limit, skip });
 
@@ -135,8 +141,9 @@ export const updateBusStatus = asyncHandler(async (req: Request, res: Response) 
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user?.id || '';
-    const userRole = req.user?.role || '';
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id || '';
+    const userRole = authenticatedReq.user?.role || '';
 
     const updatedBus = await busService.updateBusStatus(id, status, userId, userRole);
 
@@ -155,8 +162,9 @@ export const updateBusStatus = asyncHandler(async (req: Request, res: Response) 
 export const getBusStatistics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id || '';
-    const userRole = req.user?.role || '';
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id || '';
+    const userRole = authenticatedReq.user?.role || '';
 
     const statistics = await busService.getBusStatistics(id, userId, userRole);
 

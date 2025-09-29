@@ -1,4 +1,4 @@
-import { Bus, IBus } from '../models/Bus.js';
+import { Bus, IBus } from '../models/Bus';
 
 export interface CreateBusData {
   busNumber: string;
@@ -190,7 +190,7 @@ export class BusService {
     }
 
     // Get booking statistics for this bus
-    const Booking = require('../models/Booking.js').Booking;
+    const { Booking } = await import('../models/Booking');
     
     const totalBookings = await Booking.countDocuments({ bus: busId });
     const confirmedBookings = await Booking.countDocuments({ bus: busId, bookingStatus: 'confirmed' });

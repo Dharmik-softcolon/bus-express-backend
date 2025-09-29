@@ -1,5 +1,5 @@
-import { Route, IRoute } from '../models/Route.js';
-import { calculateDistance } from '../utils/auth.js';
+import { Route, IRoute } from '../models/Route';
+import { calculateDistance } from '../utils/auth';
 
 export interface CreateRouteData {
   routeName: string;

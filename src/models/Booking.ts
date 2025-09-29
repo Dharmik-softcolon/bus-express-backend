@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { BOOKING_STATUS, PAYMENT_STATUS } from '../constants/index';
+import { BOOKING_STATUS, PAYMENT_STATUS } from '../constants';
 
 // Booking interface
 export interface IBooking extends Document {

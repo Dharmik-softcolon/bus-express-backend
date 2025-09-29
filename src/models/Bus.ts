@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { BUS_STATUS } from '../constants/index';
+import { BUS_STATUS } from '../constants';
 
 // Bus interface
 export interface IBus extends Document {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { sendBadRequest } from '../utils/responseHandler.js';
+import { sendBadRequest } from '../utils/responseHandler';
 
 // Validation middleware for common patterns
 export const validateObjectId = (paramName: string = 'id') => {

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "CommonJS",
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -33,12 +33,14 @@
       "@/constants/*": ["src/constants/*"],
       "@/types/*": ["src/types/*"],
       "@/config/*": ["src/config/*"],
-      "@/services/*": ["src/services/*"]
+      "@/services/*": ["src/services/*/*", "src/validations/*"]
     },
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "allowImportingTsExtensions": false,
-    "noEmit": false
+    "noEmit": false,
+    "declaration": true,
+    "strictBindCallApply": true
   },
   "include": [
     "src/**/*"
@@ -46,18 +48,11 @@
   "exclude": [
     "node_modules",
     "dist",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node",
-    "compilerOptions": {
-      "module": "ESNext",
-      "moduleResolution": "node",
-      "allowSyntheticDefaultImports": true,
-      "esModuleInterop": true,
-      "resolveJsonModule": true,
-      "skipLibCheck": true
-    }
+    "esm": false,
+    "experimentalSpecifierResolution": "node"
   }
 }

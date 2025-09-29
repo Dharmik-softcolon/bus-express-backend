@@ -1,22 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import config from '../config/config.js';
-import { sendUnauthorized, sendForbidden } from '../utils/responseHandler.js';
-import { USER_ROLES } from '../constants/index';
-
-// Extend Request interface to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-        name: string;
-      };
-    }
-  }
-}
+import config from '../config/config';
+import { sendUnauthorized, sendForbidden } from '../utils/responseHandler';
+import { USER_ROLES } from '../constants';
+import { AuthenticatedRequest, JWTPayload } from '../types';
 
 // Authentication middleware
 export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -28,8 +15,8 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const decoded = jwt.verify(token, config.jwt.SECRET_KEY || 'fallback-secret') as any;
-    req.user = decoded;
+    const decoded = jwt.verify(token, config.jwt.SECRET_KEY || 'fallback-secret') as JWTPayload;
+    (req as AuthenticatedRequest).user = decoded;
     next();
   } catch (error) {
     sendUnauthorized(res, 'Invalid token.');
@@ -39,12 +26,13 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 // Role-based authorization middleware
 export const authorize = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user) {
+    const authenticatedReq = req as AuthenticatedRequest;
+    if (!authenticatedReq.user) {
       sendUnauthorized(res, 'Access denied. User not authenticated.');
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(authenticatedReq.user.role)) {
       sendForbidden(res, 'Access denied. Insufficient permissions.');
       return;
     }
@@ -55,12 +43,13 @@ export const authorize = (...roles: string[]) => {
 
 // Admin only middleware
 export const adminOnly = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
+  const authenticatedReq = req as AuthenticatedRequest;
+  if (!authenticatedReq.user) {
     sendUnauthorized(res, 'Access denied. User not authenticated.');
     return;
   }
 
-  if (req.user.role !== USER_ROLES.ADMIN) {
+  if (authenticatedReq.user.role !== USER_ROLES.ADMIN) {
     sendForbidden(res, 'Access denied. Admin access required.');
     return;
   }
@@ -70,12 +59,13 @@ export const adminOnly = (req: Request, res: Response, next: NextFunction): void
 
 // Operator or Admin middleware
 export const operatorOrAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
+  const authenticatedReq = req as AuthenticatedRequest;
+  if (!authenticatedReq.user) {
     sendUnauthorized(res, 'Access denied. User not authenticated.');
     return;
   }
 
-  if (req.user.role !== USER_ROLES.ADMIN && req.user.role !== USER_ROLES.OPERATOR) {
+  if (authenticatedReq.user.role !== USER_ROLES.ADMIN && authenticatedReq.user.role !== USER_ROLES.OPERATOR) {
     sendForbidden(res, 'Access denied. Operator or Admin access required.');
     return;
   }
@@ -85,12 +75,13 @@ export const operatorOrAdmin = (req: Request, res: Response, next: NextFunction)
 
 // Customer or Admin middleware
 export const customerOrAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
+  const authenticatedReq = req as AuthenticatedRequest;
+  if (!authenticatedReq.user) {
     sendUnauthorized(res, 'Access denied. User not authenticated.');
     return;
   }
 
-  if (req.user.role !== USER_ROLES.ADMIN && req.user.role !== USER_ROLES.CUSTOMER) {
+  if (authenticatedReq.user.role !== USER_ROLES.ADMIN && authenticatedReq.user.role !== USER_ROLES.CUSTOMER) {
     sendForbidden(res, 'Access denied. Customer or Admin access required.');
     return;
   }
@@ -101,12 +92,13 @@ export const customerOrAdmin = (req: Request, res: Response, next: NextFunction)
 // Check if user can access resource (own resource or admin)
 export const canAccessResource = (resourceUserId: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user) {
+    const authenticatedReq = req as AuthenticatedRequest;
+    if (!authenticatedReq.user) {
       sendUnauthorized(res, 'Access denied. User not authenticated.');
       return;
     }
 
-    if (req.user.role === USER_ROLES.ADMIN || req.user.id === resourceUserId) {
+    if (authenticatedReq.user.role === USER_ROLES.ADMIN || authenticatedReq.user.id === resourceUserId) {
       next();
     } else {
       sendForbidden(res, 'Access denied. You can only access your own resources.');
@@ -120,8 +112,8 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (token) {
-      const decoded = jwt.verify(token, config.jwt.SECRET_KEY || 'fallback-secret') as any;
-      req.user = decoded;
+      const decoded = jwt.verify(token, config.jwt.SECRET_KEY || 'fallback-secret') as JWTPayload;
+      (req as AuthenticatedRequest).user = decoded;
     }
 
     next();
