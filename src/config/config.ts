@@ -1,38 +1,8 @@
 import dotenvFlow from 'dotenv-flow';
-import {
-  EnvironmentConfig,
-  JWTConfig,
-  EmailConfig,
-  RateLimitConfig,
-  GoogleConfig,
-  StripeConfig,
-  FileUploadConfig,
-  OTPConfig,
-  PasswordResetConfig,
-  AppConfig,
-  CORSConfig,
-} from '../types';
 
 dotenvFlow.config();
 
-interface Config {
-  common: EnvironmentConfig;
-  jwt: JWTConfig;
-  email: EmailConfig;
-  mongodb: {
-    URL: string;
-  };
-  otp: OTPConfig;
-  passwordReset: PasswordResetConfig;
-  app: AppConfig;
-  google: GoogleConfig;
-  rateLimit: RateLimitConfig;
-  stripe: StripeConfig;
-  fileUpload: FileUploadConfig;
-  cors: CORSConfig;
-}
-
-const config: Config = {
+const config = {
   common: {
     PORT: process.env.PORT as string,
     NODE_ENV: process.env.NODE_ENV as string,
