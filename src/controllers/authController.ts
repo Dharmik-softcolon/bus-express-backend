@@ -4,7 +4,7 @@ import { UserService } from '../services/userService';
 import { BusService } from '../services/busService';
 import { RouteService } from '../services/routeService';
 import { BookingService } from '../services/bookingService';
-import { API_MESSAGES } from '../constants';
+import { API_MESSAGES, USER_ROLES } from '../constants';
 import { logError } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
 
@@ -232,5 +232,53 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
   } catch (error) {
     logError('Refresh token error', error);
     return sendBadRequest(res, error instanceof Error ? error.message : 'Token refresh failed');
+  }
+});
+
+// Create master admin
+export const createMasterAdmin = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, phone, company, aadhaarCard, position, address } = req.body;
+    
+    // Check if any master admin already exists
+    const existingMasterAdmin = await userService.getUserByRole(USER_ROLES.MASTER_ADMIN);
+    if (existingMasterAdmin) {
+      return sendBadRequest(res, 'Master admin already exists. Only one master admin is allowed.');
+    }
+    
+    // Create master admin user
+    const result = await userService.createUser({ 
+      name, 
+      email, 
+      password, 
+      phone, 
+      role: USER_ROLES.MASTER_ADMIN,
+      company,
+      aadhaarCard,
+      position,
+      address
+    });
+    
+    return sendCreated(res, {
+      user: {
+        id: result.user._id,
+        name: result.user.name,
+        email: result.user.email,
+        phone: result.user.phone,
+        role: result.user.role,
+        company: result.user.company,
+        aadhaarCard: result.user.aadhaarCard,
+        position: result.user.position,
+        address: result.user.address,
+        isActive: result.user.isActive,
+        isEmailVerified: result.user.isEmailVerified,
+        createdAt: result.user.createdAt,
+      },
+      token: result.token,
+      refreshToken: result.refreshToken,
+    }, API_MESSAGES.MASTER_ADMIN_CREATED);
+  } catch (error) {
+    logError('Master admin creation error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Master admin creation failed');
   }
 });

@@ -35,8 +35,8 @@ export const registerValidation = [
 
   body('role')
     .optional()
-    .isIn(['admin', 'operator', 'customer'])
-    .withMessage('Role must be admin, operator, or customer'),
+    .isIn(['master-admin', 'admin', 'operator', 'customer'])
+    .withMessage('Role must be master-admin, admin, operator, or customer'),
 ];
 
 // User login validation
@@ -125,8 +125,8 @@ export const getAllUsersValidation = [
 
   body('role')
     .optional()
-    .isIn(['admin', 'operator', 'customer'])
-    .withMessage('Role must be admin, operator, or customer'),
+    .isIn(['master-admin', 'admin', 'operator', 'customer'])
+    .withMessage('Role must be master-admin, admin, operator, or customer'),
 ];
 
 // Get user by ID validation (no body validation needed for GET)
@@ -157,8 +157,8 @@ export const updateUserByIdValidation = [
 
   body('role')
     .optional()
-    .isIn(['admin', 'operator', 'customer'])
-    .withMessage('Role must be admin, operator, or customer'),
+    .isIn(['master-admin', 'admin', 'operator', 'customer'])
+    .withMessage('Role must be master-admin, admin, operator, or customer'),
 
   body('isActive')
     .optional()
@@ -176,5 +176,64 @@ export const refreshTokenValidation = [
     .withMessage('Refresh token is required')
     .isJWT()
     .withMessage('Please provide a valid refresh token'),
+];
+
+// Master admin creation validation
+export const createMasterAdminValidation = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage('Name can only contain letters and spaces'),
+
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail(),
+
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 8, max: 128 })
+    .withMessage('Password must be between 8 and 128 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character'),
+
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .isMobilePhone('any')
+    .withMessage('Please provide a valid phone number'),
+
+  body('company')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Company name cannot exceed 100 characters'),
+
+  body('aadhaarCard')
+    .optional()
+    .trim()
+    .matches(/^\d{4}-\d{4}-\d{4}$/)
+    .withMessage('Aadhaar card must be in format XXXX-XXXX-XXXX'),
+
+  body('position')
+    .optional()
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage('Position cannot exceed 50 characters'),
+
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address cannot exceed 500 characters'),
 ];
 

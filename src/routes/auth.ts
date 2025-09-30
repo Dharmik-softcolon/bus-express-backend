@@ -10,6 +10,7 @@ import {
   updateUserById,
   deleteUser,
   refreshToken,
+  createMasterAdmin,
 } from '../controllers/authController';
 import { authenticate, authorize, adminOnly } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
@@ -24,6 +25,7 @@ import {
   updateUserByIdValidation,
   deleteUserValidation,
   refreshTokenValidation,
+  createMasterAdminValidation,
 } from '../validations/authValidation';
 
 const router = Router();
@@ -34,6 +36,9 @@ router.post('/register', [...registerValidation, validateRequest], register);
 router.post('/login', [...loginValidation, validateRequest], login);
 
 router.post('/refresh-token', [...refreshTokenValidation, validateRequest], refreshToken);
+
+// Master admin creation (public route for initial setup)
+router.post('/create-master-admin', [...createMasterAdminValidation, validateRequest], createMasterAdmin);
 
 // Protected routes
 router.use(authenticate);

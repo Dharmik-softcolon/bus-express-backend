@@ -17,13 +17,10 @@ export interface IUser extends Document {
   passwordResetExpires?: Date;
   lastLogin?: Date;
   profileImage?: string;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    pincode: string;
-    country: string;
-  };
+  company?: string;
+  aadhaarCard?: string;
+  position?: string;
+  address?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -90,15 +87,25 @@ const userSchema = new Schema<IUser>({
   profileImage: {
     type: String,
   },
+  company: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Company name cannot exceed 100 characters'],
+  },
+  aadhaarCard: {
+    type: String,
+    trim: true,
+    match: [/^\d{4}-\d{4}-\d{4}$/, 'Aadhaar card must be in format XXXX-XXXX-XXXX'],
+  },
+  position: {
+    type: String,
+    trim: true,
+    maxlength: [50, 'Position cannot exceed 50 characters'],
+  },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: {
-      type: String,
-      default: 'India',
-    },
+    type: String,
+    trim: true,
+    maxlength: [500, 'Address cannot exceed 500 characters'],
   },
 }, {
   timestamps: true,

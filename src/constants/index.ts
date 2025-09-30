@@ -21,6 +21,7 @@ export const API_MESSAGES = {
   USER_CREATED: 'User created successfully',
   USER_UPDATED: 'User updated successfully',
   USER_DELETED: 'User deleted successfully',
+  MASTER_ADMIN_CREATED: 'Master admin created successfully',
   LOGIN_SUCCESS: 'Login successful',
   LOGOUT_SUCCESS: 'Logout successful',
   BUS_CREATED: 'Bus created successfully',
@@ -35,6 +36,7 @@ export const API_MESSAGES = {
 } as const;
 
 export const USER_ROLES = {
+  MASTER_ADMIN: 'master-admin',
   ADMIN: 'admin',
   OPERATOR: 'operator',
   CUSTOMER: 'customer',

@@ -9,6 +9,10 @@ export interface CreateUserData {
   password: string;
   phone: string;
   role?: string;
+  company?: string;
+  aadhaarCard?: string;
+  position?: string;
+  address?: string;
 }
 
 export interface LoginData {
@@ -194,5 +198,9 @@ export class UserService {
     const newRefreshToken = generateRefreshToken({ id: user._id });
 
     return { token: newToken, refreshToken: newRefreshToken };
+  }
+
+  async getUserByRole(role: string): Promise<IUser | null> {
+    return await User.findOne({ role, isActive: true });
   }
 }
