@@ -141,4 +141,5 @@ export const errorLogger = (err: any, req: any, res: any, next: any) => {
   next(err);
 };
 
+export { logger };
 export default logger;

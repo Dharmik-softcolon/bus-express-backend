@@ -33,13 +33,13 @@
       "@/constants/*": ["src/constants/*"],
       "@/types/*": ["src/types/*"],
       "@/config/*": ["src/config/*"],
-      "@/services/*": ["src/services/*/*", "src/validations/*"]
+      "@/services/*": ["src/services/*"],
+      "@/validations/*": ["src/validations/*"]
     },
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "allowImportingTsExtensions": false,
     "noEmit": false,
-    "declaration": true,
     "strictBindCallApply": true
   },
   "include": [

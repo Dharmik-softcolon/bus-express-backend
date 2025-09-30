@@ -3,6 +3,11 @@ import authRoutes from './auth';
 import busRoutes from './bus';
 import routeRoutes from './route';
 import bookingRoutes from './booking';
+import tripRoutes from './trip';
+import employeeRoutes from './employee';
+import expenseRoutes from './expense';
+import analyticsRoutes from './analytics';
+import searchRoutes from './search';
 
 const router = Router();
 
@@ -11,6 +16,11 @@ router.use('/auth', authRoutes);
 router.use('/buses', busRoutes);
 router.use('/routes', routeRoutes);
 router.use('/bookings', bookingRoutes);
+router.use('/trips', tripRoutes);
+router.use('/employees', employeeRoutes);
+router.use('/expenses', expenseRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/search', searchRoutes);
 
 // Health check route
 router.get('/health', (req, res) => {

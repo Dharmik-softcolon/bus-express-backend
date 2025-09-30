@@ -22,6 +22,9 @@ export interface IRoute extends Document {
   };
   distance: number; // in kilometers
   duration: number; // in minutes
+  basePrice: number;
+  frequency: string;
+  busType: string;
   stops: Array<{
     name: string;
     city: string;
@@ -106,6 +109,21 @@ const routeSchema = new Schema<IRoute>({
     type: Number,
     required: [true, 'Duration is required'],
     min: [0, 'Duration cannot be negative'],
+  },
+  basePrice: {
+    type: Number,
+    required: [true, 'Base price is required'],
+    min: [0, 'Base price cannot be negative'],
+  },
+  frequency: {
+    type: String,
+    required: [true, 'Frequency is required'],
+    trim: true,
+  },
+  busType: {
+    type: String,
+    required: [true, 'Bus type is required'],
+    enum: ['Economy', 'Standard', 'Premium', 'Luxury'],
   },
   stops: [{
     name: {

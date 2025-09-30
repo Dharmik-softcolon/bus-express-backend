@@ -6,6 +6,7 @@ export interface IBooking extends Document {
   _id: string;
   bookingReference: string;
   user: mongoose.Types.ObjectId;
+  trip: mongoose.Types.ObjectId;
   bus: mongoose.Types.ObjectId;
   route: mongoose.Types.ObjectId;
   journeyDate: Date;
@@ -42,6 +43,11 @@ const bookingSchema = new Schema<IBooking>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'User is required'],
+  },
+  trip: {
+    type: Schema.Types.ObjectId,
+    ref: 'Trip',
+    required: [true, 'Trip is required'],
   },
   bus: {
     type: Schema.Types.ObjectId,

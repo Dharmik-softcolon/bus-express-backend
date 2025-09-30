@@ -60,6 +60,44 @@ export const PAYMENT_STATUS = {
   REFUNDED: 'refunded',
 } as const;
 
+export const TRIP_STATUS = {
+  SCHEDULED: 'scheduled',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  DELAYED: 'delayed',
+} as const;
+
+export const EMPLOYEE_ROLES = {
+  DRIVER: 'driver',
+  HELPER: 'helper',
+  MECHANIC: 'mechanic',
+  ADMIN: 'admin',
+} as const;
+
+export const EMPLOYEE_STATUS = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+  ON_LEAVE: 'on_leave',
+  TERMINATED: 'terminated',
+} as const;
+
+export const EXPENSE_TYPES = {
+  FUEL: 'fuel',
+  MAINTENANCE: 'maintenance',
+  TOLL: 'toll',
+  PARKING: 'parking',
+  REPAIR: 'repair',
+  INSURANCE: 'insurance',
+  OTHER: 'other',
+} as const;
+
+export const EXPENSE_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+} as const;
+
 export const PAGINATION = {
   DEFAULT_PAGE: 1,
   DEFAULT_LIMIT: 10,

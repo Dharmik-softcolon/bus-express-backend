@@ -20,6 +20,14 @@ export interface IBus extends Document {
     water: boolean;
     snacks: boolean;
   };
+  driver?: mongoose.Types.ObjectId;
+  helper?: mongoose.Types.ObjectId;
+  fuelCapacity: number;
+  currentFuel: number;
+  totalKm: number;
+  lastServiceKm: number;
+  fastTagNumber?: string;
+  fastTagBalance: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,6 +105,44 @@ const busSchema = new Schema<IBus>({
       default: false,
     },
   },
+  driver: {
+    type: Schema.Types.ObjectId,
+    ref: 'Employee',
+  },
+  helper: {
+    type: Schema.Types.ObjectId,
+    ref: 'Employee',
+  },
+  fuelCapacity: {
+    type: Number,
+    required: [true, 'Fuel capacity is required'],
+    min: [0, 'Fuel capacity cannot be negative'],
+  },
+  currentFuel: {
+    type: Number,
+    default: 0,
+    min: [0, 'Current fuel cannot be negative'],
+  },
+  totalKm: {
+    type: Number,
+    default: 0,
+    min: [0, 'Total KM cannot be negative'],
+  },
+  lastServiceKm: {
+    type: Number,
+    default: 0,
+    min: [0, 'Last service KM cannot be negative'],
+  },
+  fastTagNumber: {
+    type: String,
+    trim: true,
+    uppercase: true,
+  },
+  fastTagBalance: {
+    type: Number,
+    default: 0,
+    min: [0, 'FastTag balance cannot be negative'],
+  },
 }, {
   timestamps: true,
 });
@@ -105,5 +151,7 @@ const busSchema = new Schema<IBus>({
 busSchema.index({ operator: 1 });
 busSchema.index({ status: 1 });
 busSchema.index({ type: 1 });
+busSchema.index({ driver: 1 });
+busSchema.index({ helper: 1 });
 
 export const Bus = mongoose.model<IBus>('Bus', busSchema);

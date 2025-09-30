@@ -110,6 +110,22 @@ export const sendCreated = (
   });
 };
 
+// Generic response handler
+export const sendResponse = (
+  res: Response,
+  statusCode: number,
+  success: boolean,
+  message: string,
+  data: any = null
+): Response => {
+  return res.status(statusCode).json({
+    success,
+    message,
+    data,
+    timestamp: new Date().toISOString(),
+  });
+};
+
 // Async error handler wrapper
 export const asyncHandler = (fn: Function) => {
   return (req: Request, res: Response, next: NextFunction) => {
