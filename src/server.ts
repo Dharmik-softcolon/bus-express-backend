@@ -8,7 +8,7 @@ import config from './config/config';
 import connectDB from './config/database';
 import routes from './routes/index';
 import { globalErrorHandler } from './utils/responseHandler';
-import { corsMiddleware, requestLogger, securityHeaders } from './middleware/validation';
+import { requestLogger, securityHeaders } from './middleware/validation';
 import logger, { morganStream, errorLogger } from './utils/logger';
 import { setupHealthRoutes } from './services/healthService';
 
@@ -17,12 +17,37 @@ const app = express();
 // Connect to database
 connectDB();
 
-// Security middleware
-app.use(helmet());
-app.use(securityHeaders);
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+    config.cors?.ORIGIN || 'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
 
 // CORS middleware
-app.use(corsMiddleware);
+app.use(cors(corsOptions));
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+app.use(securityHeaders);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -88,8 +113,9 @@ const PORT = config.common.PORT || 5005;
 
 const server = app.listen(PORT, () => {
   console.log(`Server running in ${config.common.NODE_ENV || 'development'} with port ${PORT}`);
-  console.log(`Server Url: http://localhost:3000`);
-
+  console.log(`Server Url: http://localhost:${PORT}`);
+  console.log(`API Base URL: http://localhost:${PORT}/api/v1`);
+  console.log(`CORS enabled for: http://localhost:3000, http://localhost:5173`);
 });
 
 // Handle unhandled promise rejections
