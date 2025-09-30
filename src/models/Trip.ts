@@ -169,6 +169,6 @@ tripSchema.index({ bus: 1 });
 tripSchema.index({ driver: 1 });
 tripSchema.index({ departureDate: 1 });
 tripSchema.index({ status: 1 });
-tripSchema.index({ tripNumber: 1 });
+// tripNumber already has unique: true, so no need for separate index
 
 export const Trip = mongoose.model<ITrip>('Trip', tripSchema);

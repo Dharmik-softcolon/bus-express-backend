@@ -4,8 +4,8 @@ dotenvFlow.config();
 
 const config = {
   common: {
-    PORT: process.env.PORT as string,
-    NODE_ENV: process.env.NODE_ENV as string,
+    PORT: process.env.PORT || '5006',
+    NODE_ENV: process.env.NODE_ENV || 'development',
   },
 
   email: {
@@ -19,14 +19,14 @@ const config = {
   },
 
   jwt: {
-    SECRET_KEY: process.env.JWT_SECRET as string,
-    EXPIRY: process.env.JWT_EXPIRE as string,
-    REFRESH_SECRET: process.env.JWT_REFRESH_SECRET as string,
-    REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE as string,
+    SECRET_KEY: process.env.JWT_SECRET || 'your-super-secret-jwt-key-here',
+    EXPIRY: process.env.JWT_EXPIRE || '7d',
+    REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-here',
+    REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE || '30d',
   },
 
   mongodb: {
-    URL: process.env.MONGODB_URI as string,
+    URL: process.env.MONGODB_URI || 'mongodb://localhost:27017/bus-express',
   },
 
   otp: {
@@ -51,8 +51,8 @@ const config = {
   },
 
   rateLimit: {
-    WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS as string,
-    MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS as string,
+    WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || '900000',
+    MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || '100',
   },
 
   stripe: {

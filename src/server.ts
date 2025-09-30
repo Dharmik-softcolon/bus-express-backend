@@ -109,7 +109,7 @@ app.use(errorLogger);
 // Global error handler
 app.use(globalErrorHandler);
 
-const PORT = config.common.PORT || 5005;
+const PORT = config.common.PORT || 5006;
 
 const server = app.listen(PORT, () => {
   console.log(`Server running in ${config.common.NODE_ENV || 'development'} with port ${PORT}`);

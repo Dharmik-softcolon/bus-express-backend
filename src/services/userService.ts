@@ -23,7 +23,10 @@ export interface LoginData {
 export interface UpdateUserData {
   name?: string;
   phone?: string;
-  address?: any;
+  address?: string;
+  company?: string;
+  position?: string;
+  isActive?: boolean;
 }
 
 export interface UserFilters {

@@ -162,7 +162,6 @@ const employeeSchema = new Schema<IEmployee>({
 // Index for better performance
 employeeSchema.index({ role: 1 });
 employeeSchema.index({ status: 1 });
-employeeSchema.index({ email: 1 });
-employeeSchema.index({ phone: 1 });
+// email and phone already have unique: true, so no need for separate indexes
 
 export const Employee = mongoose.model<IEmployee>('Employee', employeeSchema);

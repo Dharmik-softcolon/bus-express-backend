@@ -282,3 +282,159 @@ export const createMasterAdmin = asyncHandler(async (req: Request, res: Response
     return sendBadRequest(res, error instanceof Error ? error.message : 'Master admin creation failed');
   }
 });
+
+// Create bus owner
+export const createBusOwner = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, phone, company, aadhaarCard, position, address, commission } = req.body;
+    
+    // Create bus owner user
+    const result = await userService.createUser({ 
+      name, 
+      email, 
+      password, 
+      phone, 
+      role: USER_ROLES.OPERATOR,
+      company,
+      aadhaarCard,
+      position,
+      address
+    });
+    
+    return sendCreated(res, {
+      user: {
+        id: result.user._id,
+        name: result.user.name,
+        email: result.user.email,
+        phone: result.user.phone,
+        role: result.user.role,
+        company: result.user.company,
+        aadhaarCard: result.user.aadhaarCard,
+        position: result.user.position,
+        address: result.user.address,
+        isActive: result.user.isActive,
+        isEmailVerified: result.user.isEmailVerified,
+        createdAt: result.user.createdAt,
+      },
+      token: result.token,
+      refreshToken: result.refreshToken,
+    }, 'Bus owner created successfully');
+  } catch (error) {
+    logError('Bus owner creation error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Bus owner creation failed');
+  }
+});
+
+// Get all bus owners
+export const getBusOwners = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const authenticatedReq = req as AuthenticatedRequest;
+    const page = authenticatedReq.pagination?.page || 1;
+    const limit = authenticatedReq.pagination?.limit || 10;
+    const skip = authenticatedReq.pagination?.skip || 0;
+
+    const { isActive, search } = req.query;
+
+    const result = await userService.getUsers(
+      { role: USER_ROLES.OPERATOR, isActive: isActive === 'true', search: search as string },
+      { page, limit, skip }
+    );
+
+    return sendSuccess(res, {
+      busOwners: result.users,
+      pagination: {
+        page,
+        limit,
+        total: result.total,
+        pages: Math.ceil(result.total / limit),
+      },
+    });
+  } catch (error) {
+    logError('Get bus owners error', error);
+    return sendError(res, 'Failed to get bus owners');
+  }
+});
+
+// Get bus owner by ID
+export const getBusOwnerById = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await userService.getUserById(id);
+
+    if (!user || user.role !== USER_ROLES.OPERATOR) {
+      return sendNotFound(res, 'Bus owner not found');
+    }
+
+    return sendSuccess(res, { busOwner: user });
+  } catch (error) {
+    logError('Get bus owner by ID error', error);
+    return sendError(res, 'Failed to get bus owner');
+  }
+});
+
+// Update bus owner
+export const updateBusOwner = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, isActive, address, company, position } = req.body;
+
+    const user = await userService.getUserById(id);
+    if (!user || user.role !== USER_ROLES.OPERATOR) {
+      return sendNotFound(res, 'Bus owner not found');
+    }
+
+    const updatedUser = await userService.updateUser(id, { name, phone, address, company, position });
+
+    if (!updatedUser) {
+      return sendNotFound(res, 'Bus owner not found');
+    }
+
+    return sendSuccess(res, { busOwner: updatedUser }, 'Bus owner updated successfully');
+  } catch (error) {
+    logError('Update bus owner error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Update failed');
+  }
+});
+
+// Delete bus owner
+export const deleteBusOwner = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await userService.getUserById(id);
+    if (!user || user.role !== USER_ROLES.OPERATOR) {
+      return sendNotFound(res, 'Bus owner not found');
+    }
+
+    await userService.deleteUser(id);
+
+    return sendSuccess(res, null, 'Bus owner deleted successfully');
+  } catch (error) {
+    logError('Delete bus owner error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Delete failed');
+  }
+});
+
+// Toggle bus owner status
+export const toggleBusOwnerStatus = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await userService.getUserById(id);
+    if (!user || user.role !== USER_ROLES.OPERATOR) {
+      return sendNotFound(res, 'Bus owner not found');
+    }
+
+    const updatedUser = await userService.updateUser(id, { isActive: !user.isActive });
+
+    if (!updatedUser) {
+      return sendNotFound(res, 'Bus owner not found');
+    }
+
+    return sendSuccess(res, { busOwner: updatedUser }, 'Bus owner status updated successfully');
+  } catch (error) {
+    logError('Toggle bus owner status error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Status update failed');
+  }
+});
