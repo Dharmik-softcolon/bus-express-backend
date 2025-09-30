@@ -162,6 +162,9 @@ export class UserService {
       ];
     }
 
+    console.log('UserService getUsers filter:', filter);
+    console.log('UserService getUsers pagination:', pagination);
+
     const users = await User.find(filter)
       .select('-password')
       .sort({ createdAt: -1 })
@@ -169,6 +172,8 @@ export class UserService {
       .limit(pagination.limit);
 
     const total = await User.countDocuments(filter);
+
+    console.log('UserService found users:', users.length, 'total:', total);
 
     return { users, total };
   }

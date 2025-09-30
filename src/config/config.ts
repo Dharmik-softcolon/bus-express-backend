@@ -4,7 +4,7 @@ dotenvFlow.config();
 
 const config = {
   common: {
-    PORT: process.env.PORT || '5006',
+    PORT: process.env.PORT || '5005',
     NODE_ENV: process.env.NODE_ENV || 'development',
   },
 

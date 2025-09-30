@@ -18,7 +18,7 @@ import {
   deleteBusOwner,
   toggleBusOwnerStatus,
 } from '../controllers/authController';
-import { authenticate, authorize, adminOnly } from '../middleware/auth';
+import { authenticate, authorize, adminOnly, masterAdminOnly } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   registerValidation,
@@ -66,16 +66,16 @@ router.put('/users/:id', adminOnly, [...updateUserByIdValidation, validateReques
 router.delete('/users/:id', adminOnly, [...deleteUserValidation, validateRequest], deleteUser);
 
 // Bus owner management routes (Master admin only)
-router.post('/bus-owners', adminOnly, [...registerValidation, validateRequest], createBusOwner);
+router.post('/bus-owners', masterAdminOnly, [...registerValidation, validateRequest], createBusOwner);
 
-router.get('/bus-owners', adminOnly, paginationMiddleware, [...getAllUsersValidation, validateRequest], getBusOwners);
+router.get('/bus-owners', masterAdminOnly, paginationMiddleware, [...getAllUsersValidation, validateRequest], getBusOwners);
 
-router.get('/bus-owners/:id', adminOnly, [...getUserByIdValidation, validateRequest], getBusOwnerById);
+router.get('/bus-owners/:id', masterAdminOnly, [...getUserByIdValidation, validateRequest], getBusOwnerById);
 
-router.put('/bus-owners/:id', adminOnly, [...updateUserByIdValidation, validateRequest], updateBusOwner);
+router.put('/bus-owners/:id', masterAdminOnly, [...updateUserByIdValidation, validateRequest], updateBusOwner);
 
-router.delete('/bus-owners/:id', adminOnly, [...deleteUserValidation, validateRequest], deleteBusOwner);
+router.delete('/bus-owners/:id', masterAdminOnly, [...deleteUserValidation, validateRequest], deleteBusOwner);
 
-router.put('/bus-owners/:id/toggle-status', adminOnly, [...getUserByIdValidation, validateRequest], toggleBusOwnerStatus);
+router.put('/bus-owners/:id/toggle-status', masterAdminOnly, [...getUserByIdValidation, validateRequest], toggleBusOwnerStatus);
 
 export default router;

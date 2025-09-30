@@ -335,10 +335,18 @@ export const getBusOwners = asyncHandler(async (req: Request, res: Response) => 
 
     const { isActive, search } = req.query;
 
+    console.log('Getting bus owners with filters:', { 
+      role: USER_ROLES.OPERATOR, 
+      isActive: isActive === 'true', 
+      search: search as string 
+    });
+
     const result = await userService.getUsers(
       { role: USER_ROLES.OPERATOR, isActive: isActive === 'true', search: search as string },
       { page, limit, skip }
     );
+
+    console.log('Found bus owners:', result.users.length, 'total:', result.total);
 
     return sendSuccess(res, {
       busOwners: result.users,
