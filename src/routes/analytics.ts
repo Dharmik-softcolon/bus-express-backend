@@ -5,7 +5,7 @@ import {
   getBusPerformanceAnalytics,
   getDashboardSummary,
 } from '../controllers/analyticsController';
-import { authenticate, adminOnly } from '../middleware/auth';
+import { authenticate, busAdminOnly } from '../middleware/auth';
 import { validateRequest } from '../middleware/validation';
 import {
   getRevenueAnalyticsValidation,
@@ -20,12 +20,12 @@ const router = Router();
 router.use(authenticate);
 
 // Analytics routes
-router.get('/revenue', adminOnly, [...getRevenueAnalyticsValidation, validateRequest], getRevenueAnalytics);
+router.get('/revenue', busAdminOnly, [...getRevenueAnalyticsValidation, validateRequest], getRevenueAnalytics);
 
-router.get('/bookings', adminOnly, [...getBookingAnalyticsValidation, validateRequest], getBookingAnalytics);
+router.get('/bookings', busAdminOnly, [...getBookingAnalyticsValidation, validateRequest], getBookingAnalytics);
 
-router.get('/bus-performance', adminOnly, [...getBusPerformanceAnalyticsValidation, validateRequest], getBusPerformanceAnalytics);
+router.get('/bus-performance', busAdminOnly, [...getBusPerformanceAnalyticsValidation, validateRequest], getBusPerformanceAnalytics);
 
-router.get('/dashboard', adminOnly, [...getDashboardSummaryValidation, validateRequest], getDashboardSummary);
+router.get('/dashboard', busAdminOnly, [...getDashboardSummaryValidation, validateRequest], getDashboardSummary);
 
 export default router;

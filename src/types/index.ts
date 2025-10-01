@@ -6,6 +6,8 @@ export interface JWTPayload {
   email: string;
   role: string;
   name: string;
+  company?: string;
+  subrole?: string;
   iat?: number;
   exp?: number;
 }
@@ -283,6 +285,8 @@ export interface AuthenticatedRequest extends Express.Request {
     email: string;
     role: string;
     name: string;
+    company?: string;
+    subrole?: string;
   };
   pagination?: {
     page: number;

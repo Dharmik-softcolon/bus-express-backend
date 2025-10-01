@@ -8,7 +8,7 @@ import {
   cancelBooking,
   getBookingStatistics,
 } from '../controllers/bookingController';
-import { authenticate, authorize, operatorOrAdmin } from '../middleware/auth';
+import { authenticate, authorize, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createBookingValidation,
@@ -37,7 +37,7 @@ router.get('/:id', [...getBookingByIdValidation, validateRequest], getBookingByI
 router.put('/:id/cancel', [...cancelBookingValidation, validateRequest], cancelBooking);
 
 // Operator/Admin routes
-router.put('/:id/status', operatorOrAdmin, [...updateBookingStatusValidation, validateRequest], updateBookingStatus);
+router.put('/:id/status', busOwnerOrBusAdmin, [...updateBookingStatusValidation, validateRequest], updateBookingStatus);
 
 router.get('/statistics', authorize('admin'), [...getBookingStatisticsValidation, validateRequest], getBookingStatistics);
 

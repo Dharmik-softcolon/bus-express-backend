@@ -8,6 +8,15 @@ import employeeRoutes from './employee';
 import expenseRoutes from './expense';
 import analyticsRoutes from './analytics';
 import searchRoutes from './search';
+import { authenticate, masterAdminOnly, busOwnerOrBusAdmin, busAdminOnly } from '../middleware/auth';
+import {
+  getMasterAdminDashboard,
+  getBusOwnerDashboard,
+  getBusAdminDashboard,
+  getBookingManagerDashboard,
+  getBusEmployeeDashboard,
+  getCustomerDashboard
+} from '../controllers/dashboardController';
 
 const router = Router();
 
@@ -21,6 +30,14 @@ router.use('/employees', employeeRoutes);
 router.use('/expenses', expenseRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/search', searchRoutes);
+
+// Role-based dashboard routes
+router.get('/master-admin', masterAdminOnly, getMasterAdminDashboard);
+router.get('/bus-owner', busOwnerOrBusAdmin, getBusOwnerDashboard);
+router.get('/bus-admin', busAdminOnly, getBusAdminDashboard);
+router.get('/booking-man', authenticate, getBookingManagerDashboard);
+router.get('/bus-employee', authenticate, getBusEmployeeDashboard);
+router.get('/customer', authenticate, getCustomerDashboard);
 
 // Health check route
 router.get('/health', (req, res) => {

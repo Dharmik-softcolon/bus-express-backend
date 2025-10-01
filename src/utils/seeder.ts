@@ -19,29 +19,29 @@ export class DatabaseSeeder {
 
       const users = [
         {
-          name: 'Admin User',
-          email: 'admin@busexpress.com',
-          password: await hashPassword('admin123'),
+          name: 'Master Admin',
+          email: 'master@busexpress.com',
+          password: await hashPassword('master123'),
           phone: '+919876543210',
-          role: USER_ROLES.ADMIN,
+          role: USER_ROLES.MASTER_ADMIN,
           isActive: true,
           isEmailVerified: true,
         },
         {
-          name: 'Bus Operator 1',
-          email: 'operator1@busexpress.com',
-          password: await hashPassword('operator123'),
+          name: 'Bus Owner 1',
+          email: 'owner1@busexpress.com',
+          password: await hashPassword('owner123'),
           phone: '+919876543211',
-          role: USER_ROLES.OPERATOR,
+          role: USER_ROLES.BUS_OWNER,
           isActive: true,
           isEmailVerified: true,
         },
         {
-          name: 'Bus Operator 2',
-          email: 'operator2@busexpress.com',
-          password: await hashPassword('operator123'),
+          name: 'Bus Owner 2',
+          email: 'owner2@busexpress.com',
+          password: await hashPassword('owner123'),
           phone: '+919876543212',
-          role: USER_ROLES.OPERATOR,
+          role: USER_ROLES.BUS_OWNER,
           isActive: true,
           isEmailVerified: true,
         },
@@ -191,17 +191,17 @@ export class DatabaseSeeder {
         return;
       }
 
-      // Get operators
-      const operators = await User.find({ role: USER_ROLES.OPERATOR });
-      if (operators.length === 0) {
-        throw new Error('No operators found. Please seed users first.');
+      // Get bus owners
+      const busOwners = await User.find({ role: USER_ROLES.BUS_OWNER });
+      if (busOwners.length === 0) {
+        throw new Error('No bus owners found. Please seed users first.');
       }
 
       const buses = [
         {
           busNumber: 'BE001',
           busName: 'Luxury Express',
-          operator: operators[0]._id,
+          operator: busOwners[0]._id,
           type: 'AC',
           totalSeats: 40,
           availableSeats: 40,
@@ -219,7 +219,7 @@ export class DatabaseSeeder {
         {
           busNumber: 'BE002',
           busName: 'Comfort Plus',
-          operator: operators[0]._id,
+          operator: busOwners[0]._id,
           type: 'Semi-Sleeper',
           totalSeats: 35,
           availableSeats: 35,
@@ -237,7 +237,7 @@ export class DatabaseSeeder {
         {
           busNumber: 'BE003',
           busName: 'Budget Travel',
-          operator: operators[1]._id,
+          operator: busOwners[1]._id,
           type: 'Non-AC',
           totalSeats: 50,
           availableSeats: 50,
@@ -255,7 +255,7 @@ export class DatabaseSeeder {
         {
           busNumber: 'BE004',
           busName: 'Premium Sleeper',
-          operator: operators[1]._id,
+          operator: busOwners[1]._id,
           type: 'Sleeper',
           totalSeats: 30,
           availableSeats: 30,

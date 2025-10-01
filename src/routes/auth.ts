@@ -17,8 +17,13 @@ import {
   updateBusOwner,
   deleteBusOwner,
   toggleBusOwnerStatus,
+  createBusAdmin,
+  createBookingManager,
+  createBusEmployee,
+  getRoleHierarchy,
+  getCreatableRoles,
 } from '../controllers/authController';
-import { authenticate, authorize, adminOnly, masterAdminOnly } from '../middleware/auth';
+import { authenticate, authorize, busAdminOnly, masterAdminOnly, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   registerValidation,
@@ -56,14 +61,14 @@ router.put('/profile', [...updateProfileValidation, validateRequest], updateProf
 
 router.put('/change-password', [...changePasswordValidation, validateRequest], changePassword);
 
-// Admin only routes
-router.get('/users', adminOnly, paginationMiddleware, [...getAllUsersValidation, validateRequest], getAllUsers);
+// Bus Admin only routes
+router.get('/users', busAdminOnly, paginationMiddleware, [...getAllUsersValidation, validateRequest], getAllUsers);
 
-router.get('/users/:id', adminOnly, [...getUserByIdValidation, validateRequest], getUserById);
+router.get('/users/:id', busAdminOnly, [...getUserByIdValidation, validateRequest], getUserById);
 
-router.put('/users/:id', adminOnly, [...updateUserByIdValidation, validateRequest], updateUserById);
+router.put('/users/:id', busAdminOnly, [...updateUserByIdValidation, validateRequest], updateUserById);
 
-router.delete('/users/:id', adminOnly, [...deleteUserValidation, validateRequest], deleteUser);
+router.delete('/users/:id', busAdminOnly, [...deleteUserValidation, validateRequest], deleteUser);
 
 // Bus owner management routes (Master admin only)
 router.post('/bus-owners', masterAdminOnly, [...registerValidation, validateRequest], createBusOwner);
@@ -77,5 +82,85 @@ router.put('/bus-owners/:id', masterAdminOnly, [...updateUserByIdValidation, val
 router.delete('/bus-owners/:id', masterAdminOnly, [...deleteUserValidation, validateRequest], deleteBusOwner);
 
 router.put('/bus-owners/:id/toggle-status', masterAdminOnly, [...getUserByIdValidation, validateRequest], toggleBusOwnerStatus);
+
+// Bus admin management routes (Bus owner only)
+router.post('/bus-admins', busOwnerOrBusAdmin, [...registerValidation, validateRequest], createBusAdmin);
+
+// Booking manager and bus employee management routes (Bus admin only)
+router.post('/booking-managers', busAdminOnly, [...registerValidation, validateRequest], createBookingManager);
+
+router.post('/bus-employees', busAdminOnly, [...registerValidation, validateRequest], createBusEmployee);
+
+// Role hierarchy and management routes
+router.get('/role-hierarchy', authenticate, getRoleHierarchy);
+
+router.get('/creatable-roles', authenticate, getCreatableRoles);
+
+// Role-based dashboard routes
+router.get('/dashboard/master-admin', masterAdminOnly, (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Master Admin Dashboard', 
+    role: 'MASTER_ADMIN',
+    dashboard: 'master-admin'
+  });
+});
+
+router.get('/dashboard/bus-owner', busOwnerOrBusAdmin, (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Bus Owner Dashboard', 
+    role: 'BUS_OWNER',
+    dashboard: 'bus-owner'
+  });
+});
+
+router.get('/dashboard/bus-admin', busAdminOnly, (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Bus Admin Dashboard', 
+    role: 'BUS_ADMIN',
+    dashboard: 'bus-admin'
+  });
+});
+
+router.get('/dashboard/booking-man', (req: any, res: any) => {
+  const authenticatedReq = req as any;
+  if (authenticatedReq.user?.role !== 'BOOKING_MAN') {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+  res.json({ 
+    success: true, 
+    message: 'Booking Manager Dashboard', 
+    role: 'BOOKING_MAN',
+    dashboard: 'booking-man'
+  });
+});
+
+router.get('/dashboard/bus-employee', (req: any, res: any) => {
+  const authenticatedReq = req as any;
+  if (authenticatedReq.user?.role !== 'BUS_EMPLOYEE') {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+  res.json({ 
+    success: true, 
+    message: 'Bus Employee Dashboard', 
+    role: 'BUS_EMPLOYEE',
+    dashboard: 'bus-employee'
+  });
+});
+
+router.get('/dashboard/customer', (req: any, res: any) => {
+  const authenticatedReq = req as any;
+  if (authenticatedReq.user?.role !== 'CUSTOMER') {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+  res.json({ 
+    success: true, 
+    message: 'Customer Dashboard', 
+    role: 'CUSTOMER',
+    dashboard: 'customer'
+  });
+});
 
 export default router;

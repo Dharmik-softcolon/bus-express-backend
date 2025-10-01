@@ -41,48 +41,64 @@ export const authorize = (...roles: string[]) => {
   };
 };
 
-// Admin only middleware
-export const adminOnly = (req: Request, res: Response, next: NextFunction): void => {
+// Bus Admin only middleware
+export const busAdminOnly = (req: Request, res: Response, next: NextFunction): void => {
   const authenticatedReq = req as AuthenticatedRequest;
   if (!authenticatedReq.user) {
     sendUnauthorized(res, 'Access denied. User not authenticated.');
     return;
   }
 
-  if (authenticatedReq.user.role !== USER_ROLES.ADMIN) {
-    sendForbidden(res, 'Access denied. Admin access required.');
+  if (authenticatedReq.user.role !== USER_ROLES.BUS_ADMIN) {
+    sendForbidden(res, 'Access denied. Bus Admin access required.');
     return;
   }
 
   next();
 };
 
-// Operator or Admin middleware
-export const operatorOrAdmin = (req: Request, res: Response, next: NextFunction): void => {
+// Master Admin only middleware
+export const masterAdminOnly = (req: Request, res: Response, next: NextFunction): void => {
   const authenticatedReq = req as AuthenticatedRequest;
   if (!authenticatedReq.user) {
     sendUnauthorized(res, 'Access denied. User not authenticated.');
     return;
   }
 
-  if (authenticatedReq.user.role !== USER_ROLES.ADMIN && authenticatedReq.user.role !== USER_ROLES.OPERATOR) {
-    sendForbidden(res, 'Access denied. Operator or Admin access required.');
+  if (authenticatedReq.user.role !== USER_ROLES.MASTER_ADMIN) {
+    sendForbidden(res, 'Access denied. Master Admin access required.');
     return;
   }
 
   next();
 };
 
-// Customer or Admin middleware
-export const customerOrAdmin = (req: Request, res: Response, next: NextFunction): void => {
+// Bus Owner or Bus Admin middleware
+export const busOwnerOrBusAdmin = (req: Request, res: Response, next: NextFunction): void => {
   const authenticatedReq = req as AuthenticatedRequest;
   if (!authenticatedReq.user) {
     sendUnauthorized(res, 'Access denied. User not authenticated.');
     return;
   }
 
-  if (authenticatedReq.user.role !== USER_ROLES.ADMIN && authenticatedReq.user.role !== USER_ROLES.CUSTOMER) {
-    sendForbidden(res, 'Access denied. Customer or Admin access required.');
+  if (authenticatedReq.user.role !== USER_ROLES.BUS_ADMIN && authenticatedReq.user.role !== USER_ROLES.BUS_OWNER) {
+    sendForbidden(res, 'Access denied. Bus Owner or Bus Admin access required.');
+    return;
+  }
+
+  next();
+};
+
+// Customer or Bus Admin middleware
+export const customerOrBusAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  const authenticatedReq = req as AuthenticatedRequest;
+  if (!authenticatedReq.user) {
+    sendUnauthorized(res, 'Access denied. User not authenticated.');
+    return;
+  }
+
+  if (authenticatedReq.user.role !== USER_ROLES.BUS_ADMIN && authenticatedReq.user.role !== USER_ROLES.CUSTOMER) {
+    sendForbidden(res, 'Access denied. Customer or Bus Admin access required.');
     return;
   }
 
@@ -98,7 +114,7 @@ export const canAccessResource = (resourceUserId: string) => {
       return;
     }
 
-    if (authenticatedReq.user.role === USER_ROLES.ADMIN || authenticatedReq.user.id === resourceUserId) {
+    if (authenticatedReq.user.role === USER_ROLES.BUS_ADMIN || authenticatedReq.user.id === resourceUserId) {
       next();
     } else {
       sendForbidden(res, 'Access denied. You can only access your own resources.');

@@ -4,6 +4,7 @@ import { UserService } from '../services/userService';
 import { BusService } from '../services/busService';
 import { RouteService } from '../services/routeService';
 import { BookingService } from '../services/bookingService';
+import { RoleValidationService } from '../services/roleValidationService';
 import { API_MESSAGES, USER_ROLES } from '../constants';
 import { logError } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
@@ -143,8 +144,11 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
 
     const { role, isActive, search } = req.query;
 
+    // Convert isActive to boolean, but only if it's provided
+    const isActiveFilter = isActive !== undefined ? isActive === 'true' : undefined;
+
     const result = await userService.getUsers(
-      { role: role as string, isActive: isActive === 'true', search: search as string },
+      { role: role as string, isActive: isActiveFilter, search: search as string },
       { page, limit, skip }
     );
 
@@ -286,7 +290,9 @@ export const createMasterAdmin = asyncHandler(async (req: Request, res: Response
 // Create bus owner
 export const createBusOwner = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, company, aadhaarCard, position, address, commission } = req.body;
+    const { name, email, password, phone, company, aadhaarCard, position, address } = req.body;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const creatorId = authenticatedReq.user?.id;
     
     // Create bus owner user
     const result = await userService.createUser({ 
@@ -294,7 +300,8 @@ export const createBusOwner = asyncHandler(async (req: Request, res: Response) =
       email, 
       password, 
       phone, 
-      role: USER_ROLES.OPERATOR,
+      role: USER_ROLES.BUS_OWNER,
+      createdBy: creatorId,
       company,
       aadhaarCard,
       position,
@@ -335,14 +342,17 @@ export const getBusOwners = asyncHandler(async (req: Request, res: Response) => 
 
     const { isActive, search } = req.query;
 
+    // Convert isActive to boolean, but only if it's provided
+    const isActiveFilter = isActive !== undefined ? isActive === 'true' : undefined;
+
     console.log('Getting bus owners with filters:', { 
-      role: USER_ROLES.OPERATOR, 
-      isActive: isActive === 'true', 
+      role: USER_ROLES.BUS_OWNER, 
+      isActive: isActiveFilter, 
       search: search as string 
     });
 
     const result = await userService.getUsers(
-      { role: USER_ROLES.OPERATOR, isActive: isActive === 'true', search: search as string },
+      { role: USER_ROLES.BUS_OWNER, isActive: isActiveFilter, search: search as string },
       { page, limit, skip }
     );
 
@@ -370,7 +380,7 @@ export const getBusOwnerById = asyncHandler(async (req: Request, res: Response) 
 
     const user = await userService.getUserById(id);
 
-    if (!user || user.role !== USER_ROLES.OPERATOR) {
+    if (!user || user.role !== USER_ROLES.BUS_OWNER) {
       return sendNotFound(res, 'Bus owner not found');
     }
 
@@ -388,7 +398,7 @@ export const updateBusOwner = asyncHandler(async (req: Request, res: Response) =
     const { name, email, phone, isActive, address, company, position } = req.body;
 
     const user = await userService.getUserById(id);
-    if (!user || user.role !== USER_ROLES.OPERATOR) {
+    if (!user || user.role !== USER_ROLES.BUS_OWNER) {
       return sendNotFound(res, 'Bus owner not found');
     }
 
@@ -411,7 +421,7 @@ export const deleteBusOwner = asyncHandler(async (req: Request, res: Response) =
     const { id } = req.params;
 
     const user = await userService.getUserById(id);
-    if (!user || user.role !== USER_ROLES.OPERATOR) {
+    if (!user || user.role !== USER_ROLES.BUS_OWNER) {
       return sendNotFound(res, 'Bus owner not found');
     }
 
@@ -430,7 +440,7 @@ export const toggleBusOwnerStatus = asyncHandler(async (req: Request, res: Respo
     const { id } = req.params;
 
     const user = await userService.getUserById(id);
-    if (!user || user.role !== USER_ROLES.OPERATOR) {
+    if (!user || user.role !== USER_ROLES.BUS_OWNER) {
       return sendNotFound(res, 'Bus owner not found');
     }
 
@@ -444,5 +454,185 @@ export const toggleBusOwnerStatus = asyncHandler(async (req: Request, res: Respo
   } catch (error) {
     logError('Toggle bus owner status error', error);
     return sendBadRequest(res, error instanceof Error ? error.message : 'Status update failed');
+  }
+});
+
+// Create bus admin
+export const createBusAdmin = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, phone, company, aadhaarCard, position, address } = req.body;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const creatorId = authenticatedReq.user?.id;
+    
+    const result = await userService.createUser({ 
+      name, 
+      email, 
+      password, 
+      phone, 
+      role: USER_ROLES.BUS_ADMIN,
+      createdBy: creatorId,
+      company,
+      aadhaarCard,
+      position,
+      address
+    });
+    
+    return sendCreated(res, {
+      user: {
+        id: result.user._id,
+        name: result.user.name,
+        email: result.user.email,
+        phone: result.user.phone,
+        role: result.user.role,
+        company: result.user.company,
+        aadhaarCard: result.user.aadhaarCard,
+        position: result.user.position,
+        address: result.user.address,
+        isActive: result.user.isActive,
+        isEmailVerified: result.user.isEmailVerified,
+        createdAt: result.user.createdAt,
+      },
+      token: result.token,
+      refreshToken: result.refreshToken,
+    }, 'Bus admin created successfully');
+  } catch (error) {
+    logError('Bus admin creation error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Bus admin creation failed');
+  }
+});
+
+// Create booking manager
+export const createBookingManager = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, phone, company, aadhaarCard, position, address } = req.body;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const creatorId = authenticatedReq.user?.id;
+    
+    const result = await userService.createUser({ 
+      name, 
+      email, 
+      password, 
+      phone, 
+      role: USER_ROLES.BOOKING_MAN,
+      createdBy: creatorId,
+      company,
+      aadhaarCard,
+      position,
+      address
+    });
+    
+    return sendCreated(res, {
+      user: {
+        id: result.user._id,
+        name: result.user.name,
+        email: result.user.email,
+        phone: result.user.phone,
+        role: result.user.role,
+        company: result.user.company,
+        aadhaarCard: result.user.aadhaarCard,
+        position: result.user.position,
+        address: result.user.address,
+        isActive: result.user.isActive,
+        isEmailVerified: result.user.isEmailVerified,
+        createdAt: result.user.createdAt,
+      },
+      token: result.token,
+      refreshToken: result.refreshToken,
+    }, 'Booking manager created successfully');
+  } catch (error) {
+    logError('Booking manager creation error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Booking manager creation failed');
+  }
+});
+
+// Create bus employee
+export const createBusEmployee = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, phone, company, aadhaarCard, position, address, subrole } = req.body;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const creatorId = authenticatedReq.user?.id;
+    
+    const result = await userService.createUser({ 
+      name, 
+      email, 
+      password, 
+      phone, 
+      role: USER_ROLES.BUS_EMPLOYEE,
+      subrole,
+      createdBy: creatorId,
+      company,
+      aadhaarCard,
+      position,
+      address
+    });
+    
+    return sendCreated(res, {
+      user: {
+        id: result.user._id,
+        name: result.user.name,
+        email: result.user.email,
+        phone: result.user.phone,
+        role: result.user.role,
+        subrole: result.user.subrole,
+        company: result.user.company,
+        aadhaarCard: result.user.aadhaarCard,
+        position: result.user.position,
+        address: result.user.address,
+        isActive: result.user.isActive,
+        isEmailVerified: result.user.isEmailVerified,
+        createdAt: result.user.createdAt,
+      },
+      token: result.token,
+      refreshToken: result.refreshToken,
+    }, 'Bus employee created successfully');
+  } catch (error) {
+    logError('Bus employee creation error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Bus employee creation failed');
+  }
+});
+
+// Get role hierarchy
+export const getRoleHierarchy = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const hierarchy = RoleValidationService.getRoleHierarchy();
+    const limits = RoleValidationService.getRoleLimits();
+    
+    return sendSuccess(res, {
+      hierarchy,
+      limits,
+      roles: Object.values(USER_ROLES),
+      subroles: {
+        [USER_ROLES.BUS_EMPLOYEE]: RoleValidationService.getSubroles(USER_ROLES.BUS_EMPLOYEE)
+      }
+    });
+  } catch (error) {
+    logError('Get role hierarchy error', error);
+    return sendError(res, 'Failed to get role hierarchy');
+  }
+});
+
+// Get creatable roles for current user
+export const getCreatableRoles = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userRole = authenticatedReq.user?.role;
+    
+    if (!userRole) {
+      return sendBadRequest(res, 'User role not found');
+    }
+    
+    const creatableRoles = RoleValidationService.getCreatableRoles(userRole);
+    
+    return sendSuccess(res, {
+      creatableRoles,
+      hasSubroles: creatableRoles.map(role => ({
+        role,
+        hasSubroles: RoleValidationService.hasSubroles(role),
+        subroles: RoleValidationService.getSubroles(role)
+      }))
+    });
+  } catch (error) {
+    logError('Get creatable roles error', error);
+    return sendError(res, 'Failed to get creatable roles');
   }
 });

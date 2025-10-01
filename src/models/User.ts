@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { USER_ROLES } from '../constants';
+import { USER_ROLES, BUS_EMPLOYEE_SUBROLES } from '../constants';
 
 // User interface
 export interface IUser extends Document {
@@ -10,6 +10,8 @@ export interface IUser extends Document {
   password: string;
   phone: string;
   role: string;
+  subrole?: string; // For BUS_EMPLOYEE: DRIVER or HELPER
+  createdBy?: string; // ID of the user who created this user
   isActive: boolean;
   isEmailVerified: boolean;
   emailVerificationToken?: string;
@@ -60,6 +62,17 @@ const userSchema = new Schema<IUser>({
     type: String,
     enum: Object.values(USER_ROLES),
     default: USER_ROLES.CUSTOMER,
+  },
+  subrole: {
+    type: String,
+    enum: Object.values(BUS_EMPLOYEE_SUBROLES),
+    required: function(this: IUser) {
+      return this.role === USER_ROLES.BUS_EMPLOYEE;
+    },
+  },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   },
   isActive: {
     type: Boolean,

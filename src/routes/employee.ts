@@ -8,7 +8,7 @@ import {
   updateEmployeeStatus,
   getEmployeeStatistics,
 } from '../controllers/employeeController';
-import { authenticate, adminOnly } from '../middleware/auth';
+import { authenticate, busAdminOnly } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createEmployeeValidation,
@@ -26,18 +26,21 @@ const router = Router();
 router.use(authenticate);
 
 // Employee management routes
-router.post('/', adminOnly, [...createEmployeeValidation, validateRequest], createEmployee);
+router.post('/', busAdminOnly, [...createEmployeeValidation, validateRequest], createEmployee);
 
 router.get('/', paginationMiddleware, [...getAllEmployeesValidation, validateRequest], getAllEmployees);
 
-router.get('/statistics', adminOnly, [...getEmployeeStatisticsValidation, validateRequest], getEmployeeStatistics);
+router.get('/statistics', busAdminOnly, [...getEmployeeStatisticsValidation, validateRequest], getEmployeeStatistics);
 
 router.get('/:id', [...getEmployeeByIdValidation, validateRequest], getEmployeeById);
 
-router.put('/:id', adminOnly, [...updateEmployeeValidation, validateRequest], updateEmployee);
+router.put('/:id', busAdminOnly, [...updateEmployeeValidation, validateRequest], updateEmployee);
 
-router.put('/:id/status', adminOnly, [...updateEmployeeStatusValidation, validateRequest], updateEmployeeStatus);
+router.put('/:id/status', busAdminOnly, [...updateEmployeeStatusValidation, validateRequest], updateEmployeeStatus);
 
-router.delete('/:id', adminOnly, [...deleteEmployeeValidation, validateRequest], deleteEmployee);
+router.delete('/:id', busAdminOnly, [...deleteEmployeeValidation, validateRequest], deleteEmployee);
+
+// Get employees by role
+router.get('/role/:role', paginationMiddleware, [...getAllEmployeesValidation, validateRequest], getAllEmployees);
 
 export default router;

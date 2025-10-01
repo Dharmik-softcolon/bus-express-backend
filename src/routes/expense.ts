@@ -9,7 +9,7 @@ import {
   rejectExpense,
   getExpenseAnalytics,
 } from '../controllers/expenseController';
-import { authenticate, operatorOrAdmin } from '../middleware/auth';
+import { authenticate, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createExpenseValidation,
@@ -28,20 +28,20 @@ const router = Router();
 router.use(authenticate);
 
 // Expense management routes
-router.post('/', operatorOrAdmin, [...createExpenseValidation, validateRequest], createExpense);
+router.post('/', busOwnerOrBusAdmin, [...createExpenseValidation, validateRequest], createExpense);
 
 router.get('/', paginationMiddleware, [...getAllExpensesValidation, validateRequest], getAllExpenses);
 
-router.get('/analytics', operatorOrAdmin, [...getExpenseAnalyticsValidation, validateRequest], getExpenseAnalytics);
+router.get('/analytics', busOwnerOrBusAdmin, [...getExpenseAnalyticsValidation, validateRequest], getExpenseAnalytics);
 
 router.get('/:id', [...getExpenseByIdValidation, validateRequest], getExpenseById);
 
-router.put('/:id', operatorOrAdmin, [...updateExpenseValidation, validateRequest], updateExpense);
+router.put('/:id', busOwnerOrBusAdmin, [...updateExpenseValidation, validateRequest], updateExpense);
 
-router.put('/:id/approve', operatorOrAdmin, [...approveExpenseValidation, validateRequest], approveExpense);
+router.put('/:id/approve', busOwnerOrBusAdmin, [...approveExpenseValidation, validateRequest], approveExpense);
 
-router.put('/:id/reject', operatorOrAdmin, [...rejectExpenseValidation, validateRequest], rejectExpense);
+router.put('/:id/reject', busOwnerOrBusAdmin, [...rejectExpenseValidation, validateRequest], rejectExpense);
 
-router.delete('/:id', operatorOrAdmin, [...deleteExpenseValidation, validateRequest], deleteExpense);
+router.delete('/:id', busOwnerOrBusAdmin, [...deleteExpenseValidation, validateRequest], deleteExpense);
 
 export default router;

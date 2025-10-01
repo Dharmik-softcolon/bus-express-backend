@@ -224,4 +224,18 @@ export class BusService {
       $inc: { availableSeats: seatCount }
     });
   }
+
+  async getBusesCount(filters: { ownerId?: string; status?: string } = {}): Promise<number> {
+    const query: any = {};
+    
+    if (filters.ownerId) {
+      query.operator = filters.ownerId;
+    }
+    
+    if (filters.status) {
+      query.status = filters.status;
+    }
+    
+    return await Bus.countDocuments(query);
+  }
 }

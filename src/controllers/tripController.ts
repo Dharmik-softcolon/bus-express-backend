@@ -106,6 +106,14 @@ export const getAllTrips = async (req: Request, res: Response) => {
     if (route) filter.route = route;
     if (bus) filter.bus = bus;
     if (driver) filter.driver = driver;
+    
+    // Handle route and bus filters from URL params
+    if (req.params.routeId) {
+      filter.route = req.params.routeId;
+    }
+    if (req.params.busId) {
+      filter.bus = req.params.busId;
+    }
     if (departureDate) {
       const date = new Date(departureDate as string);
       const nextDay = new Date(date);

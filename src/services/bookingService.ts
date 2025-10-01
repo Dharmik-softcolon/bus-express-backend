@@ -305,4 +305,89 @@ export class BookingService {
       },
     };
   }
+
+  async getBookingsCount(filters: { 
+    ownerId?: string; 
+    adminId?: string; 
+    managerId?: string; 
+    customerId?: string; 
+    status?: string; 
+    date?: string 
+  } = {}): Promise<number> {
+    const query: any = {};
+    
+    if (filters.ownerId) {
+      // Get bookings for buses owned by this owner
+      const buses = await Bus.find({ operator: filters.ownerId }).select('_id');
+      const busIds = buses.map(bus => bus._id);
+      query.bus = { $in: busIds };
+    }
+    
+    if (filters.adminId) {
+      // Get bookings for buses managed by this admin
+      const buses = await Bus.find({ operator: filters.adminId }).select('_id');
+      const busIds = buses.map(bus => bus._id);
+      query.bus = { $in: busIds };
+    }
+    
+    if (filters.managerId) {
+      query.bookingManager = filters.managerId;
+    }
+    
+    if (filters.customerId) {
+      query.user = filters.customerId;
+    }
+    
+    if (filters.status) {
+      query.bookingStatus = filters.status;
+    }
+    
+    if (filters.date) {
+      const startDate = new Date(filters.date);
+      const endDate = new Date(filters.date);
+      endDate.setDate(endDate.getDate() + 1);
+      query.journeyDate = { $gte: startDate, $lt: endDate };
+    }
+    
+    return await Booking.countDocuments(query);
+  }
+
+  async getTotalRevenue(filters: { 
+    ownerId?: string; 
+    adminId?: string; 
+    managerId?: string; 
+    customerId?: string 
+  } = {}): Promise<number> {
+    const matchQuery: any = {
+      bookingStatus: BOOKING_STATUS.CONFIRMED,
+      paymentStatus: PAYMENT_STATUS.COMPLETED,
+    };
+    
+    if (filters.ownerId) {
+      const buses = await Bus.find({ operator: filters.ownerId }).select('_id');
+      const busIds = buses.map(bus => bus._id);
+      matchQuery.bus = { $in: busIds };
+    }
+    
+    if (filters.adminId) {
+      const buses = await Bus.find({ operator: filters.adminId }).select('_id');
+      const busIds = buses.map(bus => bus._id);
+      matchQuery.bus = { $in: busIds };
+    }
+    
+    if (filters.managerId) {
+      matchQuery.bookingManager = filters.managerId;
+    }
+    
+    if (filters.customerId) {
+      matchQuery.user = filters.customerId;
+    }
+    
+    const result = await Booking.aggregate([
+      { $match: matchQuery },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]);
+    
+    return result[0]?.total || 0;
+  }
 }

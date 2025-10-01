@@ -11,7 +11,7 @@ import {
   removeStopFromRoute,
   updateRouteStatus,
 } from '../controllers/routeController';
-import { authenticate, adminOnly } from '../middleware/auth';
+import { authenticate, busAdminOnly } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createRouteValidation,
@@ -38,16 +38,16 @@ router.get('/:id', [...getRouteByIdValidation, validateRequest], getRouteById);
 router.use(authenticate);
 
 // Admin only routes
-router.post('/', adminOnly, [...createRouteValidation, validateRequest], createRoute);
+router.post('/', busAdminOnly, [...createRouteValidation, validateRequest], createRoute);
 
-router.put('/:id', adminOnly, [...updateRouteValidation, validateRequest], updateRoute);
+router.put('/:id', busAdminOnly, [...updateRouteValidation, validateRequest], updateRoute);
 
-router.delete('/:id', adminOnly, [...deleteRouteValidation, validateRequest], deleteRoute);
+router.delete('/:id', busAdminOnly, [...deleteRouteValidation, validateRequest], deleteRoute);
 
-router.put('/:id/status', adminOnly, [...updateRouteStatusValidation, validateRequest], updateRouteStatus);
+router.put('/:id/status', busAdminOnly, [...updateRouteStatusValidation, validateRequest], updateRouteStatus);
 
-router.post('/:id/stops', adminOnly, [...addStopToRouteValidation, validateRequest], addStopToRoute);
+router.post('/:id/stops', busAdminOnly, [...addStopToRouteValidation, validateRequest], addStopToRoute);
 
-router.delete('/:id/stops', adminOnly, [...removeStopFromRouteValidation, validateRequest], removeStopFromRoute);
+router.delete('/:id/stops', busAdminOnly, [...removeStopFromRouteValidation, validateRequest], removeStopFromRoute);
 
 export default router;

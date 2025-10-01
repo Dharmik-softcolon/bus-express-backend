@@ -9,7 +9,7 @@ import {
   updateBusStatus,
   getBusStatistics,
 } from '../controllers/busController';
-import { authenticate, authorize, operatorOrAdmin } from '../middleware/auth';
+import { authenticate, authorize, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createBusValidation,
@@ -32,17 +32,17 @@ router.get('/:id', [...getBusByIdValidation, validateRequest], getBusById);
 router.use(authenticate);
 
 // Operator/Admin routes
-router.post('/', operatorOrAdmin, [...createBusValidation, validateRequest], createBus);
+router.post('/', busOwnerOrBusAdmin, [...createBusValidation, validateRequest], createBus);
 
-router.put('/:id', operatorOrAdmin, [...updateBusValidation, validateRequest], updateBus);
+router.put('/:id', busOwnerOrBusAdmin, [...updateBusValidation, validateRequest], updateBus);
 
-router.delete('/:id', operatorOrAdmin, [...deleteBusValidation, validateRequest], deleteBus);
+router.delete('/:id', busOwnerOrBusAdmin, [...deleteBusValidation, validateRequest], deleteBus);
 
-router.put('/:id/status', operatorOrAdmin, [...updateBusStatusValidation, validateRequest], updateBusStatus);
+router.put('/:id/status', busOwnerOrBusAdmin, [...updateBusStatusValidation, validateRequest], updateBusStatus);
 
-router.get('/:id/statistics', operatorOrAdmin, [...getBusStatisticsValidation, validateRequest], getBusStatistics);
+router.get('/:id/statistics', busOwnerOrBusAdmin, [...getBusStatisticsValidation, validateRequest], getBusStatistics);
 
 // Get buses by operator
-router.get('/operator/:operatorId', operatorOrAdmin, paginationMiddleware, [...getBusesByOperatorValidation, validateRequest], getBusesByOperator);
+router.get('/operator/:operatorId', busOwnerOrBusAdmin, paginationMiddleware, [...getBusesByOperatorValidation, validateRequest], getBusesByOperator);
 
 export default router;

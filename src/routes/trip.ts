@@ -8,7 +8,7 @@ import {
   updateTripStatus,
   getTripStatistics,
 } from '../controllers/tripController';
-import { authenticate, operatorOrAdmin } from '../middleware/auth';
+import { authenticate, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   createTripValidation,
@@ -26,18 +26,23 @@ const router = Router();
 router.use(authenticate);
 
 // Trip management routes
-router.post('/', operatorOrAdmin, [...createTripValidation, validateRequest], createTrip);
+router.post('/', busOwnerOrBusAdmin, [...createTripValidation, validateRequest], createTrip);
 
 router.get('/', paginationMiddleware, [...getAllTripsValidation, validateRequest], getAllTrips);
 
-router.get('/statistics', operatorOrAdmin, [...getTripStatisticsValidation, validateRequest], getTripStatistics);
+router.get('/statistics', busOwnerOrBusAdmin, [...getTripStatisticsValidation, validateRequest], getTripStatistics);
 
 router.get('/:id', [...getTripByIdValidation, validateRequest], getTripById);
 
-router.put('/:id', operatorOrAdmin, [...updateTripValidation, validateRequest], updateTrip);
+router.put('/:id', busOwnerOrBusAdmin, [...updateTripValidation, validateRequest], updateTrip);
 
-router.put('/:id/status', operatorOrAdmin, [...updateTripStatusValidation, validateRequest], updateTripStatus);
+router.put('/:id/status', busOwnerOrBusAdmin, [...updateTripStatusValidation, validateRequest], updateTripStatus);
 
-router.delete('/:id', operatorOrAdmin, [...deleteTripValidation, validateRequest], deleteTrip);
+router.delete('/:id', busOwnerOrBusAdmin, [...deleteTripValidation, validateRequest], deleteTrip);
+
+// Additional trip routes
+router.get('/route/:routeId', [...getAllTripsValidation, validateRequest], getAllTrips);
+
+router.get('/bus/:busId', [...getAllTripsValidation, validateRequest], getAllTrips);
 
 export default router;

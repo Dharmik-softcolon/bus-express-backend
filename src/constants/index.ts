@@ -36,10 +36,17 @@ export const API_MESSAGES = {
 } as const;
 
 export const USER_ROLES = {
-  MASTER_ADMIN: 'master-admin',
-  ADMIN: 'admin',
-  OPERATOR: 'operator',
-  CUSTOMER: 'customer',
+  MASTER_ADMIN: 'MASTER_ADMIN',
+  BUS_OWNER: 'BUS_OWNER',
+  BUS_ADMIN: 'BUS_ADMIN',
+  BOOKING_MAN: 'BOOKING_MAN',
+  BUS_EMPLOYEE: 'BUS_EMPLOYEE',
+  CUSTOMER: 'CUSTOMER',
+} as const;
+
+export const BUS_EMPLOYEE_SUBROLES = {
+  DRIVER: 'DRIVER',
+  HELPER: 'HELPER',
 } as const;
 
 export const BUS_STATUS = {
@@ -70,11 +77,20 @@ export const TRIP_STATUS = {
   DELAYED: 'delayed',
 } as const;
 
-export const EMPLOYEE_ROLES = {
-  DRIVER: 'driver',
-  HELPER: 'helper',
-  MECHANIC: 'mechanic',
-  ADMIN: 'admin',
+// Role hierarchy and creation rules
+export const ROLE_HIERARCHY: Record<string, string[]> = {
+  [USER_ROLES.MASTER_ADMIN]: [USER_ROLES.BUS_OWNER],
+  [USER_ROLES.BUS_OWNER]: [USER_ROLES.BUS_ADMIN],
+  [USER_ROLES.BUS_ADMIN]: [USER_ROLES.BOOKING_MAN, USER_ROLES.BUS_EMPLOYEE],
+  [USER_ROLES.BOOKING_MAN]: [],
+  [USER_ROLES.BUS_EMPLOYEE]: [],
+  [USER_ROLES.CUSTOMER]: [],
+};
+
+// Role limits
+export const ROLE_LIMITS = {
+  [USER_ROLES.MASTER_ADMIN]: 1,
+  [USER_ROLES.BUS_ADMIN]: 2, // per BUS_OWNER
 } as const;
 
 export const EMPLOYEE_STATUS = {

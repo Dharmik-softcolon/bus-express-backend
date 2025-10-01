@@ -2,6 +2,7 @@ import { User, IUser } from '../models/User';
 import { hashPassword, comparePassword, generateToken, generateRefreshToken } from '../utils/auth';
 import config from '../config/config';
 import { USER_ROLES } from '../constants';
+import { RoleValidationService } from './roleValidationService';
 
 export interface CreateUserData {
   name: string;
@@ -9,6 +10,8 @@ export interface CreateUserData {
   password: string;
   phone: string;
   role?: string;
+  subrole?: string;
+  createdBy?: string;
   company?: string;
   aadhaarCard?: string;
   position?: string;
@@ -44,6 +47,19 @@ export class UserService {
 
     if (existingUser) {
       throw new Error('User with this email or phone already exists');
+    }
+
+    // Validate role creation if creator is specified
+    if (userData.createdBy && userData.role) {
+      const validation = await RoleValidationService.canCreateRole(userData.createdBy, userData.role);
+      if (!validation.canCreate) {
+        throw new Error(validation.reason || 'Cannot create user with this role');
+      }
+
+      // Validate subrole if provided
+      if (userData.subrole && !RoleValidationService.isValidSubrole(userData.role, userData.subrole)) {
+        throw new Error(`Invalid subrole ${userData.subrole} for role ${userData.role}`);
+      }
     }
 
     // Hash password
@@ -86,7 +102,6 @@ export class UserService {
     // Update last login
     user.lastLogin = new Date();
     await user.save();
-
     // Generate tokens
     const token = generateToken({ id: user._id, email: user.email, role: user.role, name: user.name });
     const refreshToken = generateRefreshToken({ id: user._id });
@@ -210,5 +225,19 @@ export class UserService {
 
   async getUserByRole(role: string): Promise<IUser | null> {
     return await User.findOne({ role, isActive: true });
+  }
+
+  async getUsersCount(filters: { role?: string; createdBy?: string } = {}): Promise<number> {
+    const query: any = { isActive: true };
+    
+    if (filters.role) {
+      query.role = filters.role;
+    }
+    
+    if (filters.createdBy) {
+      query.createdBy = filters.createdBy;
+    }
+    
+    return await User.countDocuments(query);
   }
 }

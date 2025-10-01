@@ -1,4 +1,5 @@
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
+import { USER_ROLES, BUS_EMPLOYEE_SUBROLES } from '../constants';
 
 // User registration validation
 export const registerValidation = [
@@ -35,8 +36,13 @@ export const registerValidation = [
 
   body('role')
     .optional()
-    .isIn(['master-admin', 'admin', 'operator', 'customer'])
-    .withMessage('Role must be master-admin, admin, operator, or customer'),
+    .isIn(Object.values(USER_ROLES))
+    .withMessage(`Role must be one of: ${Object.values(USER_ROLES).join(', ')}`),
+
+  body('subrole')
+    .optional()
+    .isIn(Object.values(BUS_EMPLOYEE_SUBROLES))
+    .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
 ];
 
 // User login validation
@@ -107,26 +113,36 @@ export const changePasswordValidation = [
 
 // Get all users validation (query parameters)
 export const getAllUsersValidation = [
-  body('page')
+  query('page')
     .optional()
     .isInt({ min: 1 })
     .withMessage('Page must be a positive integer'),
 
-  body('limit')
+  query('limit')
     .optional()
     .isInt({ min: 1, max: 100 })
     .withMessage('Limit must be between 1 and 100'),
 
-  body('search')
+  query('search')
     .optional()
     .trim()
     .isLength({ max: 100 })
     .withMessage('Search term cannot exceed 100 characters'),
 
-  body('role')
+  query('role')
     .optional()
-    .isIn(['master-admin', 'admin', 'operator', 'customer'])
-    .withMessage('Role must be master-admin, admin, operator, or customer'),
+    .isIn(Object.values(USER_ROLES))
+    .withMessage(`Role must be one of: ${Object.values(USER_ROLES).join(', ')}`),
+
+  query('isActive')
+    .optional()
+    .isBoolean()
+    .withMessage('isActive must be a boolean value'),
+
+  query('subrole')
+    .optional()
+    .isIn(Object.values(BUS_EMPLOYEE_SUBROLES))
+    .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
 ];
 
 // Get user by ID validation (no body validation needed for GET)
@@ -157,8 +173,13 @@ export const updateUserByIdValidation = [
 
   body('role')
     .optional()
-    .isIn(['master-admin', 'admin', 'operator', 'customer'])
-    .withMessage('Role must be master-admin, admin, operator, or customer'),
+    .isIn(Object.values(USER_ROLES))
+    .withMessage(`Role must be one of: ${Object.values(USER_ROLES).join(', ')}`),
+
+  body('subrole')
+    .optional()
+    .isIn(Object.values(BUS_EMPLOYEE_SUBROLES))
+    .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
 
   body('isActive')
     .optional()
@@ -237,3 +258,12 @@ export const createMasterAdminValidation = [
     .withMessage('Address cannot exceed 500 characters'),
 ];
 
+// Bus employee creation validation
+export const createBusEmployeeValidation = [
+  ...registerValidation,
+  body('subrole')
+    .notEmpty()
+    .withMessage('Subrole is required for bus employees')
+    .isIn(Object.values(BUS_EMPLOYEE_SUBROLES))
+    .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
+];

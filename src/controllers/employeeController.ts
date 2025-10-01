@@ -35,6 +35,11 @@ export const getAllEmployees = async (req: Request, res: Response) => {
 
     if (role) filter.role = role;
     if (status) filter.status = status;
+    
+    // Handle role filter from URL params
+    if (req.params.role) {
+      filter.role = req.params.role;
+    }
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },

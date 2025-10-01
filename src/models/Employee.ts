@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { EMPLOYEE_ROLES, EMPLOYEE_STATUS } from '../constants';
+import { BUS_EMPLOYEE_SUBROLES, EMPLOYEE_STATUS } from '../constants';
 
 // Employee interface
 export interface IEmployee extends Document {
@@ -62,7 +62,7 @@ const employeeSchema = new Schema<IEmployee>({
   },
   role: {
     type: String,
-    enum: Object.values(EMPLOYEE_ROLES),
+    enum: Object.values(BUS_EMPLOYEE_SUBROLES),
     required: [true, 'Role is required'],
   },
   licenseNumber: {

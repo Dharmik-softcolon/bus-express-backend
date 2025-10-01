@@ -65,14 +65,19 @@ export const hasRole = (userRole: string, requiredRoles: string[]): boolean => {
   return requiredRoles.includes(userRole);
 };
 
-// Check if user is admin
-export const isAdmin = (userRole: string): boolean => {
-  return userRole === USER_ROLES.ADMIN;
+// Check if user is bus admin
+export const isBusAdmin = (userRole: string): boolean => {
+  return userRole === USER_ROLES.BUS_ADMIN;
 };
 
-// Check if user is operator
-export const isOperator = (userRole: string): boolean => {
-  return userRole === USER_ROLES.OPERATOR;
+// Check if user is bus owner
+export const isBusOwner = (userRole: string): boolean => {
+  return userRole === USER_ROLES.BUS_OWNER;
+};
+
+// Check if user is master admin
+export const isMasterAdmin = (userRole: string): boolean => {
+  return userRole === USER_ROLES.MASTER_ADMIN;
 };
 
 // Check if user is customer
