@@ -5,7 +5,7 @@ import { BusService } from '../services/busService';
 import { RouteService } from '../services/routeService';
 import { BookingService } from '../services/bookingService';
 import { RoleValidationService } from '../services/roleValidationService';
-import { API_MESSAGES, USER_ROLES } from '../constants';
+import { API_MESSAGES, USER_ROLES, HTTP_STATUS } from '../constants';
 import { logError } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
 
@@ -373,6 +373,46 @@ export const getBusOwners = asyncHandler(async (req: Request, res: Response) => 
   }
 });
 
+export const getBusAdmins = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const authenticatedReq = req as AuthenticatedRequest;
+    const page = authenticatedReq.pagination?.page || 1;
+    const limit = authenticatedReq.pagination?.limit || 10;
+    const skip = authenticatedReq.pagination?.skip || 0;
+
+    const { isActive, search } = req.query;
+
+    // Convert isActive to boolean, but only if it's provided
+    const isActiveFilter = isActive !== undefined ? isActive === 'true' : undefined;
+
+    console.log('Getting bus admins with filters:', { 
+      role: USER_ROLES.BUS_ADMIN, 
+      isActive: isActiveFilter, 
+      search: search as string 
+    });
+
+    const result = await userService.getUsers(
+      { role: USER_ROLES.BUS_ADMIN, isActive: isActiveFilter, search: search as string },
+      { page, limit, skip }
+    );
+
+    console.log('Found bus admins:', result.users.length, 'total:', result.total);
+
+    return sendSuccess(res, {
+      busAdmins: result.users,
+      pagination: {
+        page,
+        limit,
+        total: result.total,
+        pages: Math.ceil(result.total / limit),
+      },
+    });
+  } catch (error) {
+    logError('Get bus admins error', error);
+    return sendError(res, 'Failed to get bus admins');
+  }
+});
+
 // Get bus owner by ID
 export const getBusOwnerById = asyncHandler(async (req: Request, res: Response) => {
   try {
@@ -454,6 +494,65 @@ export const toggleBusOwnerStatus = asyncHandler(async (req: Request, res: Respo
   } catch (error) {
     logError('Toggle bus owner status error', error);
     return sendBadRequest(res, error instanceof Error ? error.message : 'Status update failed');
+  }
+});
+
+// Update bus admin
+export const updateBusAdmin = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, company, aadhaarCard, position, address } = req.body;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const updaterId = authenticatedReq.user?.id;
+    
+    const result = await userService.updateUser(id, { 
+      name, 
+      phone, 
+      company,
+      aadhaarCard,
+      position,
+      address
+    });
+    
+    if (!result) {
+      return sendNotFound(res, 'Bus admin not found');
+    }
+    
+    return sendSuccess(res, {
+      user: {
+        id: result._id,
+        name: result.name,
+        email: result.email,
+        phone: result.phone,
+        role: result.role,
+        company: result.company,
+        aadhaarCard: result.aadhaarCard,
+        position: result.position,
+        address: result.address,
+        status: result.isActive ? 'active' : 'inactive',
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt
+      }
+    }, 'Bus admin updated successfully');
+  } catch (error) {
+    logError('Error updating bus admin:', error);
+    return sendError(res, 'Failed to update bus admin', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+// Delete bus admin
+export const deleteBusAdmin = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const deleterId = authenticatedReq.user?.id;
+    
+    await userService.deleteUser(id);
+    
+    return sendSuccess(res, null, 'Bus admin deleted successfully');
+  } catch (error) {
+    logError('Error deleting bus admin:', error);
+    return sendError(res, 'Failed to delete bus admin', HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 });
 

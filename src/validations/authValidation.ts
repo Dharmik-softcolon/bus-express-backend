@@ -45,6 +45,56 @@ export const registerValidation = [
     .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
 ];
 
+// User update validation (no password)
+export const updateUserValidation = [
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage('Name can only contain letters and spaces'),
+
+  body('email')
+    .optional()
+    .trim()
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail(),
+
+  body('phone')
+    .optional()
+    .trim()
+    .isMobilePhone('any')
+    .withMessage('Please provide a valid phone number'),
+
+  body('company')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Company name must be between 2 and 100 characters'),
+
+  body('aadhaarCard')
+    .optional()
+    .trim()
+    .isLength({ min: 12, max: 12 })
+    .withMessage('Aadhaar card must be 12 digits')
+    .isNumeric()
+    .withMessage('Aadhaar card must contain only numbers'),
+
+  body('position')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Position must be between 2 and 50 characters'),
+
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Address must be between 5 and 200 characters'),
+];
+
 // User login validation
 export const loginValidation = [
   body('email')

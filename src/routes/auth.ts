@@ -13,11 +13,14 @@ import {
   createMasterAdmin,
   createBusOwner,
   getBusOwners,
+  getBusAdmins,
   getBusOwnerById,
   updateBusOwner,
   deleteBusOwner,
   toggleBusOwnerStatus,
   createBusAdmin,
+  updateBusAdmin,
+  deleteBusAdmin,
   createBookingManager,
   createBusEmployee,
   getRoleHierarchy,
@@ -27,6 +30,7 @@ import { authenticate, authorize, busAdminOnly, masterAdminOnly, busOwnerOrBusAd
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
 import {
   registerValidation,
+  updateUserValidation,
   loginValidation,
   getProfileValidation,
   updateProfileValidation,
@@ -74,6 +78,7 @@ router.delete('/users/:id', busAdminOnly, [...deleteUserValidation, validateRequ
 router.post('/bus-owners', masterAdminOnly, [...registerValidation, validateRequest], createBusOwner);
 
 router.get('/bus-owners', masterAdminOnly, paginationMiddleware, [...getAllUsersValidation, validateRequest], getBusOwners);
+router.get('/bus-admins', busOwnerOrBusAdmin, paginationMiddleware, [...getAllUsersValidation, validateRequest], getBusAdmins);
 
 router.get('/bus-owners/:id', masterAdminOnly, [...getUserByIdValidation, validateRequest], getBusOwnerById);
 
@@ -85,6 +90,8 @@ router.put('/bus-owners/:id/toggle-status', masterAdminOnly, [...getUserByIdVali
 
 // Bus admin management routes (Bus owner only)
 router.post('/bus-admins', busOwnerOrBusAdmin, [...registerValidation, validateRequest], createBusAdmin);
+router.put('/bus-admins/:id', busOwnerOrBusAdmin, [...updateUserValidation, validateRequest], updateBusAdmin);
+router.delete('/bus-admins/:id', busOwnerOrBusAdmin, deleteBusAdmin);
 
 // Booking manager and bus employee management routes (Bus admin only)
 router.post('/booking-managers', busAdminOnly, [...registerValidation, validateRequest], createBookingManager);

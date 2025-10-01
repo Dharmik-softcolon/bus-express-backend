@@ -7,6 +7,7 @@ export const createEmployeeValidation = [
     .isLength({ min: 2, max: 50 })
     .withMessage('Name must be between 2 and 50 characters'),
   body('email')
+    .optional()
     .isEmail()
     .withMessage('Valid email is required')
     .normalizeEmail(),
@@ -14,37 +15,49 @@ export const createEmployeeValidation = [
     .matches(/^(\+91|91)?[6-9]\d{9}$/)
     .withMessage('Valid phone number is required'),
   body('role')
-    .isIn(['driver', 'helper', 'mechanic', 'admin'])
-    .withMessage('Invalid role'),
-  body('licenseNumber')
+    .isIn(['BUS_OWNER', 'BUS_ADMIN', 'BUS_EMPLOYEE', 'BOOKING_MAN'])
+    .withMessage('Invalid role - must be BUS_OWNER, BUS_ADMIN, BUS_EMPLOYEE, or BOOKING_MAN'),
+  body('subrole')
+    .optional()
+    .isIn(['DRIVER', 'HELPER'])
+    .withMessage('Invalid subrole - must be DRIVER or HELPER')
+    .custom((value, { req }) => {
+      if (req.body.role === 'BUS_EMPLOYEE' && !value) {
+        throw new Error('Subrole is required for BUS_EMPLOYEE');
+      }
+      if (['BUS_ADMIN', 'BUS_OWNER', 'BOOKING_MAN'].includes(req.body.role) && value) {
+        throw new Error(`Subrole should not be provided for ${req.body.role}`);
+      }
+      return true;
+    }),
+  body('license')
+    .optional()
+    .custom((value, { req }) => {
+      if (req.body.role === 'BUS_EMPLOYEE' && req.body.subrole === 'DRIVER' && !value) {
+        throw new Error('License number is required for drivers');
+      }
+      return true;
+    }),
+  body('aadhaarCard')
     .optional()
     .notEmpty()
-    .withMessage('License number is required for drivers'),
-  body('licenseExpiry')
+    .withMessage('Aadhaar card is required'),
+  body('address')
+    .notEmpty()
+    .withMessage('Address is required'),
+  body('assignedBus')
     .optional()
-    .isISO8601()
-    .withMessage('Valid license expiry date is required'),
-  body('address.street')
-    .notEmpty()
-    .withMessage('Street address is required'),
-  body('address.city')
-    .notEmpty()
-    .withMessage('City is required'),
-  body('address.state')
-    .notEmpty()
-    .withMessage('State is required'),
-  body('address.pincode')
-    .matches(/^\d{6}$/)
-    .withMessage('Valid 6-digit pincode is required'),
-  body('emergencyContact.name')
-    .notEmpty()
-    .withMessage('Emergency contact name is required'),
-  body('emergencyContact.phone')
-    .matches(/^(\+91|91)?[6-9]\d{9}$/)
-    .withMessage('Valid emergency contact phone is required'),
-  body('emergencyContact.relationship')
-    .notEmpty()
-    .withMessage('Emergency contact relationship is required'),
+    .custom((value, { req }) => {
+      // Only require assignedBus for BUS_EMPLOYEE with DRIVER subrole
+      if (req.body.role === 'BUS_EMPLOYEE' && req.body.subrole === 'DRIVER' && !value) {
+        throw new Error('Assigned bus is required for drivers');
+      }
+      return true;
+    }),
+  body('status')
+    .optional()
+    .isIn(['active', 'inactive'])
+    .withMessage('Status must be active or inactive'),
   body('salary')
     .optional()
     .isNumeric()

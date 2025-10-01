@@ -9,6 +9,25 @@ import { logger } from '../utils/logger';
 // Create a new employee
 export const createEmployee = async (req: Request, res: Response) => {
   try {
+    console.log(req.body,"kkkk")
+    
+    // Check role hierarchy permissions
+    const userRole = (req as any).user?.role;
+    const targetRole = req.body.role;
+    
+    // Define role hierarchy
+    const roleHierarchy: Record<string, string[]> = {
+      'MASTER_ADMIN': ['BUS_OWNER'],
+      'BUS_OWNER': ['BUS_ADMIN'],
+      'BUS_ADMIN': ['BUS_EMPLOYEE', 'BOOKING_MAN']
+    };
+    
+    // Check if user can create the target role
+    if (!userRole || !roleHierarchy[userRole]?.includes(targetRole)) {
+      return sendResponse(res, HTTP_STATUS.FORBIDDEN, false, 
+        `You don't have permission to create ${targetRole} role`);
+    }
+    
     const employee = new Employee(req.body);
     await employee.save();
 

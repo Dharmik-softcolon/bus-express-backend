@@ -29,6 +29,7 @@ export interface UpdateUserData {
   address?: string;
   company?: string;
   position?: string;
+  aadhaarCard?: string;
   isActive?: boolean;
 }
 

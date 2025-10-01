@@ -8,5 +8,13 @@ export * from './tripValidation';
 export * from './employeeValidation';
 export * from './expenseValidation';
 export * from './analyticsValidation';
-export * from './searchValidation';
+
+// Export search validation with specific exports to avoid conflicts
+export {
+  searchBusesValidation,
+  getPopularRoutesValidation as getPopularRoutesSearchValidation,
+  getAvailableSeatsValidation,
+  getTripDetailsValidation,
+  getSearchSuggestionsValidation
+} from './searchValidation';
 

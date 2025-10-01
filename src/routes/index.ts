@@ -34,7 +34,7 @@ router.use('/search', searchRoutes);
 // Role-based dashboard routes
 router.get('/master-admin', masterAdminOnly, getMasterAdminDashboard);
 router.get('/bus-owner', busOwnerOrBusAdmin, getBusOwnerDashboard);
-router.get('/bus-admin', busAdminOnly, getBusAdminDashboard);
+router.get('/bus-admin', busOwnerOrBusAdmin, getBusAdminDashboard);
 router.get('/booking-man', authenticate, getBookingManagerDashboard);
 router.get('/bus-employee', authenticate, getBusEmployeeDashboard);
 router.get('/customer', authenticate, getCustomerDashboard);
