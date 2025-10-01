@@ -60,6 +60,8 @@ export const busAdminOnly = (req: Request, res: Response, next: NextFunction): v
 // Master Admin only middleware
 export const masterAdminOnly = (req: Request, res: Response, next: NextFunction): void => {
   const authenticatedReq = req as AuthenticatedRequest;
+
+  console.log(authenticatedReq,"authenticatedReq")
   if (!authenticatedReq.user) {
     sendUnauthorized(res, 'Access denied. User not authenticated.');
     return;
