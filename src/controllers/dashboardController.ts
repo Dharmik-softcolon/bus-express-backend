@@ -336,6 +336,363 @@ export const getBusEmployeeDashboard = asyncHandler(async (req: Request, res: Re
   }
 });
 
+// Get comprehensive dashboard data for admin
+export const getAdminDashboard = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id || '';
+
+    // Get comprehensive statistics
+    const [
+      totalBuses,
+      totalRoutes,
+      totalBookings,
+      totalEmployees,
+      totalBookingMen,
+      totalRevenue,
+      todayBookings,
+      activeBuses,
+      maintenanceBuses,
+      recentBookings,
+      recentTrips,
+      recentExpenses
+    ] = await Promise.all([
+      Bus.countDocuments(),
+      Route.countDocuments(),
+      Booking.countDocuments(),
+      User.countDocuments({ role: 'BUS_EMPLOYEE' }),
+      User.countDocuments({ role: 'BOOKING_MAN' }),
+      Booking.aggregate([
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' }
+          }
+        }
+      ]).then(result => result[0]?.total || 0),
+      Booking.countDocuments({
+        journeyDate: {
+          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          $lt: new Date(new Date().setHours(23, 59, 59, 999))
+        }
+      }),
+      Bus.countDocuments({ status: 'active' }),
+      Bus.countDocuments({ status: 'maintenance' }),
+      Booking.find().sort({ createdAt: -1 }).limit(10).populate('user', 'name email phone'),
+      Trip.find().sort({ createdAt: -1 }).limit(10).populate('route', 'name'),
+      Expense.find().sort({ createdAt: -1 }).limit(10).populate('bus', 'number')
+    ]);
+
+    // Get monthly revenue data
+    const monthlyRevenue = await Booking.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: '$journeyDate' },
+            month: { $month: '$journeyDate' }
+          },
+          revenue: { $sum: '$totalAmount' },
+          bookings: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': -1, '_id.month': -1 } },
+      { $limit: 12 }
+    ]);
+
+    // Get route performance
+    const routePerformance = await Route.aggregate([
+      {
+        $lookup: {
+          from: 'bookings',
+          localField: '_id',
+          foreignField: 'route',
+          as: 'bookings'
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          totalBookings: { $size: '$bookings' },
+          totalRevenue: { $sum: '$bookings.totalAmount' },
+          avgFare: { $avg: '$bookings.totalAmount' }
+        }
+      },
+      { $sort: { totalBookings: -1 } },
+      { $limit: 10 }
+    ]);
+
+    const dashboardData = {
+      user: {
+        id: authenticatedReq.user?.id,
+        name: authenticatedReq.user?.name,
+        email: authenticatedReq.user?.email,
+        role: authenticatedReq.user?.role,
+        company: authenticatedReq.user?.company
+      },
+      statistics: {
+        totalBuses,
+        totalRoutes,
+        totalBookings,
+        totalEmployees,
+        totalBookingMen,
+        totalRevenue,
+        todayBookings,
+        activeBuses,
+        maintenanceBuses
+      },
+      charts: {
+        monthlyRevenue,
+        routePerformance
+      },
+      recent: {
+        bookings: recentBookings,
+        trips: recentTrips,
+        expenses: recentExpenses
+      },
+      features: [
+        'Comprehensive bus management',
+        'Route and trip management',
+        'Employee and booking manager management',
+        'Revenue and expense tracking',
+        'Real-time analytics'
+      ]
+    };
+
+    return sendSuccess(res, dashboardData, 'Admin Dashboard data retrieved successfully');
+  } catch (error) {
+    logError('Admin Dashboard error', error);
+    return sendError(res, 'Failed to get Admin Dashboard data');
+  }
+});
+
+// Get buses data for admin dashboard
+export const getAdminBuses = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 10, status, search } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const filter: any = {};
+    if (status) filter.status = status;
+    if (search) {
+      filter.$or = [
+        { number: { $regex: search, $options: 'i' } },
+        { type: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [buses, total] = await Promise.all([
+      Bus.find(filter)
+        .populate('owner', 'name email')
+        .populate('driver', 'name phone')
+        .populate('conductor', 'name phone')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Bus.countDocuments(filter)
+    ]);
+
+    return sendSuccess(res, {
+      buses,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit))
+      }
+    }, 'Buses retrieved successfully');
+  } catch (error) {
+    logError('Get admin buses error', error);
+    return sendError(res, 'Failed to get buses');
+  }
+});
+
+// Get routes data for admin dashboard
+export const getAdminRoutes = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const filter: any = {};
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { from: { $regex: search, $options: 'i' } },
+        { to: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [routes, total] = await Promise.all([
+      Route.find(filter)
+        .populate('owner', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Route.countDocuments(filter)
+    ]);
+
+    return sendSuccess(res, {
+      routes,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit))
+      }
+    }, 'Routes retrieved successfully');
+  } catch (error) {
+    logError('Get admin routes error', error);
+    return sendError(res, 'Failed to get routes');
+  }
+});
+
+// Get bookings data for admin dashboard
+export const getAdminBookings = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 10, status, search } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const filter: any = {};
+    if (status) filter.bookingStatus = status;
+    if (search) {
+      filter.$or = [
+        { bookingReference: { $regex: search, $options: 'i' } },
+        { 'passengerDetails.name': { $regex: search, $options: 'i' } },
+        { 'passengerDetails.phone': { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(filter)
+        .populate('user', 'name email phone')
+        .populate('trip', 'departureTime arrivalTime')
+        .populate('route', 'name from to')
+        .populate('bus', 'number')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Booking.countDocuments(filter)
+    ]);
+
+    return sendSuccess(res, {
+      bookings,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit))
+      }
+    }, 'Bookings retrieved successfully');
+  } catch (error) {
+    logError('Get admin bookings error', error);
+    return sendError(res, 'Failed to get bookings');
+  }
+});
+
+// Get expenses data for admin dashboard
+export const getAdminExpenses = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 10, category, status, search } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const filter: any = {};
+    if (category) filter.category = category;
+    if (status) filter.status = status;
+    if (search) {
+      filter.$or = [
+        { description: { $regex: search, $options: 'i' } },
+        { addedBy: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [expenses, total] = await Promise.all([
+      Expense.find(filter)
+        .populate('bus', 'number')
+        .populate('addedBy', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Expense.countDocuments(filter)
+    ]);
+
+    return sendSuccess(res, {
+      expenses,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit))
+      }
+    }, 'Expenses retrieved successfully');
+  } catch (error) {
+    logError('Get admin expenses error', error);
+    return sendError(res, 'Failed to get expenses');
+  }
+});
+
+// Get earnings data for admin dashboard
+export const getAdminEarnings = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { period = 'month' } = req.query;
+    
+    let dateFilter: any = {};
+    const now = new Date();
+    
+    switch (period) {
+      case 'week':
+        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+        const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+        dateFilter = {
+          journeyDate: { $gte: weekStart, $lte: weekEnd }
+        };
+        break;
+      case 'month':
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        dateFilter = {
+          journeyDate: { $gte: monthStart, $lte: monthEnd }
+        };
+        break;
+      case 'year':
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearEnd = new Date(now.getFullYear(), 11, 31);
+        dateFilter = {
+          journeyDate: { $gte: yearStart, $lte: yearEnd }
+        };
+        break;
+    }
+
+    const earnings = await Booking.aggregate([
+      { $match: dateFilter },
+      {
+        $lookup: {
+          from: 'routes',
+          localField: 'route',
+          foreignField: '_id',
+          as: 'routeInfo'
+        }
+      },
+      {
+        $group: {
+          _id: {
+            route: { $arrayElemAt: ['$routeInfo.name', 0] },
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$journeyDate' } }
+          },
+          revenue: { $sum: '$totalAmount' },
+          bookings: { $sum: 1 },
+          avgFare: { $avg: '$totalAmount' }
+        }
+      },
+      { $sort: { '_id.date': -1 } },
+      { $limit: 50 }
+    ]);
+
+    return sendSuccess(res, { earnings }, 'Earnings data retrieved successfully');
+  } catch (error) {
+    logError('Get admin earnings error', error);
+    return sendError(res, 'Failed to get earnings data');
+  }
+});
+
 // Customer Dashboard
 export const getCustomerDashboard = asyncHandler(async (req: Request, res: Response) => {
   try {

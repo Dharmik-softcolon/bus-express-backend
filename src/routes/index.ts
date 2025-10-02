@@ -7,15 +7,14 @@ import tripRoutes from './trip';
 import expenseRoutes from './expense';
 import analyticsRoutes from './analytics';
 import searchRoutes from './search';
-import { authenticate, masterAdminOnly, busOwnerOrBusAdmin, busAdminOnly } from '../middleware/auth';
-import {
-  getMasterAdminDashboard,
-  getBusOwnerDashboard,
-  getBusAdminDashboard,
-  getBookingManagerDashboard,
-  getBusEmployeeDashboard,
-  getCustomerDashboard
-} from '../controllers/dashboardController';
+
+// Role-based routes
+import masterAdminRoutes from './masterAdminRoutes';
+import busOwnerRoutes from './busOwnerRoutes';
+import busAdminRoutes from './busAdminRoutes';
+import bookingManagerRoutes from './bookingManagerRoutes';
+import busEmployeeRoutes from './busEmployeeRoutes';
+import customerRoutes from './customerRoutes';
 
 const router = Router();
 
@@ -29,13 +28,13 @@ router.use('/expenses', expenseRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/search', searchRoutes);
 
-// Role-based dashboard routes
-router.get('/master-admin', masterAdminOnly, getMasterAdminDashboard);
-router.get('/bus-owner', busOwnerOrBusAdmin, getBusOwnerDashboard);
-router.get('/bus-admin', busOwnerOrBusAdmin, getBusAdminDashboard);
-router.get('/booking-man', authenticate, getBookingManagerDashboard);
-router.get('/bus-employee', authenticate, getBusEmployeeDashboard);
-router.get('/customer', authenticate, getCustomerDashboard);
+// Role-based routes
+router.use('/master-admin', masterAdminRoutes);
+router.use('/bus-owner', busOwnerRoutes);
+router.use('/bus-admin', busAdminRoutes);
+router.use('/booking-manager', bookingManagerRoutes);
+router.use('/bus-employee', busEmployeeRoutes);
+router.use('/customer', customerRoutes);
 
 // Health check route
 router.get('/health', (req, res) => {

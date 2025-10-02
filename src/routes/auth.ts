@@ -23,6 +23,11 @@ import {
   deleteBusAdmin,
   createBookingManager,
   createBusEmployee,
+  getBusEmployees,
+  getBusEmployeeById,
+  updateBusEmployee,
+  deleteBusEmployee,
+  toggleBusEmployeeStatus,
   getRoleHierarchy,
   getCreatableRoles,
   getUserByIdForDebug,
@@ -100,7 +105,13 @@ router.get('/debug/user/:id', authenticate, getUserByIdForDebug);
 // Booking manager and bus employee management routes (Bus admin only)
 router.post('/booking-managers', busAdminOnly, [...registerValidation, validateRequest], createBookingManager);
 
+// Bus employee CRUD routes (Bus admin only)
 router.post('/bus-employees', busAdminOnly, [...registerValidation, validateRequest], createBusEmployee);
+router.get('/bus-employees', busAdminOnly, paginationMiddleware, [...getAllUsersValidation, validateRequest], getBusEmployees);
+router.get('/bus-employees/:id', busAdminOnly, [...getUserByIdValidation, validateRequest], getBusEmployeeById);
+router.put('/bus-employees/:id', busAdminOnly, [...updateUserValidation, validateRequest], updateBusEmployee);
+router.delete('/bus-employees/:id', busAdminOnly, [...getUserByIdValidation, validateRequest], deleteBusEmployee);
+router.put('/bus-employees/:id/toggle-status', busAdminOnly, [...getUserByIdValidation, validateRequest], toggleBusEmployeeStatus);
 
 // Role hierarchy and management routes
 router.get('/role-hierarchy', authenticate, getRoleHierarchy);

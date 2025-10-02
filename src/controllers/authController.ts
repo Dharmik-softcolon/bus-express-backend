@@ -967,6 +967,151 @@ export const createBusEmployee = asyncHandler(async (req: Request, res: Response
   }
 });
 
+// Get all bus employees
+export const getBusEmployees = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const authenticatedReq = req as AuthenticatedRequest;
+    const page = authenticatedReq.pagination?.page || 1;
+    const limit = authenticatedReq.pagination?.limit || 10;
+    const skip = authenticatedReq.pagination?.skip || 0;
+
+    const { isActive, search, subrole } = req.query;
+
+    // Build filter
+    const filter: any = { role: USER_ROLES.BUS_EMPLOYEE };
+    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (subrole) filter.subrole = subrole;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { license: { $regex: search, $options: 'i' } },
+        { assignedBus: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const busEmployees = await User.find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await User.countDocuments(filter);
+
+    return sendSuccess(res, {
+      employees: busEmployees,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    }, 'Bus employees retrieved successfully');
+  } catch (error) {
+    logError('Get bus employees error', error);
+    return sendError(res, 'Failed to get bus employees');
+  }
+});
+
+// Get bus employee by ID
+export const getBusEmployeeById = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findOne({ _id: id, role: USER_ROLES.BUS_EMPLOYEE }).select('-password');
+
+    if (!user) {
+      return sendNotFound(res, 'Bus employee not found');
+    }
+
+    return sendSuccess(res, { employee: user }, 'Bus employee retrieved successfully');
+  } catch (error) {
+    logError('Get bus employee by ID error', error);
+    return sendError(res, 'Failed to get bus employee');
+  }
+});
+
+// Update bus employee
+export const updateBusEmployee = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, company, aadhaarCard, position, address, subrole, salary, license, assignedBus, isActive } = req.body;
+
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (company) updateData.company = company;
+    if (aadhaarCard) updateData.aadhaarCard = aadhaarCard;
+    if (position) updateData.position = position;
+    if (address) updateData.address = address;
+    if (subrole) updateData.subrole = subrole;
+    if (salary !== undefined) updateData.salary = salary;
+    if (license) updateData.license = license;
+    if (assignedBus) updateData.assignedBus = assignedBus;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: id, role: USER_ROLES.BUS_EMPLOYEE },
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return sendNotFound(res, 'Bus employee not found');
+    }
+
+    return sendSuccess(res, { employee: updatedUser }, 'Bus employee updated successfully');
+  } catch (error) {
+    logError('Update bus employee error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Update failed');
+  }
+});
+
+// Delete bus employee
+export const deleteBusEmployee = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findOneAndDelete({ _id: id, role: USER_ROLES.BUS_EMPLOYEE });
+    if (!user) {
+      return sendNotFound(res, 'Bus employee not found');
+    }
+
+    return sendSuccess(res, null, 'Bus employee deleted successfully');
+  } catch (error) {
+    logError('Delete bus employee error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Delete failed');
+  }
+});
+
+// Toggle bus employee status
+export const toggleBusEmployeeStatus = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findOne({ _id: id, role: USER_ROLES.BUS_EMPLOYEE });
+    if (!user) {
+      return sendNotFound(res, 'Bus employee not found');
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: id, role: USER_ROLES.BUS_EMPLOYEE },
+      { isActive: !user.isActive },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return sendNotFound(res, 'Bus employee not found');
+    }
+
+    return sendSuccess(res, { employee: updatedUser }, 'Bus employee status updated successfully');
+  } catch (error) {
+    logError('Toggle bus employee status error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Status update failed');
+  }
+});
+
 // Get role hierarchy
 export const getRoleHierarchy = asyncHandler(async (req: Request, res: Response) => {
   try {
