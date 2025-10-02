@@ -25,6 +25,7 @@ import {
   createBusEmployee,
   getRoleHierarchy,
   getCreatableRoles,
+  getUserByIdForDebug,
 } from '../controllers/authController';
 import { authenticate, authorize, busAdminOnly, masterAdminOnly, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
@@ -92,6 +93,9 @@ router.put('/bus-owners/:id/toggle-status', masterAdminOnly, [...getUserByIdVali
 router.post('/bus-admins', busOwnerOrBusAdmin, [...registerValidation, validateRequest], createBusAdmin);
 router.put('/bus-admins/:id', busOwnerOrBusAdmin, [...updateUserValidation, validateRequest], updateBusAdmin);
 router.delete('/bus-admins/:id', busOwnerOrBusAdmin, deleteBusAdmin);
+
+// Debug route to check user details
+router.get('/debug/user/:id', authenticate, getUserByIdForDebug);
 
 // Booking manager and bus employee management routes (Bus admin only)
 router.post('/booking-managers', busAdminOnly, [...registerValidation, validateRequest], createBookingManager);

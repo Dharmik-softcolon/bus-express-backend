@@ -77,10 +77,8 @@ export const updateUserValidation = [
   body('aadhaarCard')
     .optional()
     .trim()
-    .isLength({ min: 12, max: 12 })
-    .withMessage('Aadhaar card must be 12 digits')
-    .isNumeric()
-    .withMessage('Aadhaar card must contain only numbers'),
+    .matches(/^\d{4}-\d{4}-\d{4}$/)
+    .withMessage('Aadhaar card must be in format XXXX-XXXX-XXXX'),
 
   body('position')
     .optional()
@@ -93,6 +91,30 @@ export const updateUserValidation = [
     .trim()
     .isLength({ min: 5, max: 200 })
     .withMessage('Address must be between 5 and 200 characters'),
+
+  body('salary')
+    .optional()
+    .isNumeric()
+    .isFloat({ min: 0 })
+    .withMessage('Salary must be a positive number'),
+
+  body('commission')
+    .optional()
+    .isNumeric()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('Commission must be between 0 and 100'),
+
+  body('license')
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 20 })
+    .withMessage('License must be between 5 and 20 characters'),
+
+  body('assignedBus')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 20 })
+    .withMessage('Assigned bus must be between 1 and 20 characters'),
 ];
 
 // User login validation

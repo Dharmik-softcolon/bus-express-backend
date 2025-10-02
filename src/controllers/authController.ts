@@ -655,7 +655,18 @@ export const toggleBusOwnerStatus = asyncHandler(async (req: Request, res: Respo
 export const updateBusAdmin = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, phone, company, aadhaarCard, position, address } = req.body;
+    const { name, phone, company, aadhaarCard, position, address, salary, commission } = req.body;
+    
+    // First check if user exists
+    const existingUser = await User.findById(id).select('-password');
+    if (!existingUser) {
+      return sendNotFound(res, 'User not found');
+    }
+    
+    // Check if user has the right role
+    if (existingUser.role !== USER_ROLES.BUS_ADMIN) {
+      return sendBadRequest(res, `User is not a bus admin. Current role: ${existingUser.role}`);
+    }
     
     const updateData: any = {};
     if (name) updateData.name = name;
@@ -664,15 +675,17 @@ export const updateBusAdmin = asyncHandler(async (req: Request, res: Response) =
     if (aadhaarCard) updateData.aadhaarCard = aadhaarCard;
     if (position) updateData.position = position;
     if (address) updateData.address = address;
+    if (salary !== undefined) updateData.salary = salary;
+    if (commission !== undefined) updateData.commission = commission;
     
-    const result = await User.findOneAndUpdate(
-      { _id: id, role: USER_ROLES.BUS_ADMIN },
+    const result = await User.findByIdAndUpdate(
+      id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
     
     if (!result) {
-      return sendNotFound(res, 'Bus admin not found');
+      return sendNotFound(res, 'User not found');
     }
     
     return sendSuccess(res, {
@@ -686,6 +699,8 @@ export const updateBusAdmin = asyncHandler(async (req: Request, res: Response) =
         aadhaarCard: result.aadhaarCard,
         position: result.position,
         address: result.address,
+        salary: result.salary,
+        commission: result.commission,
         status: result.isActive ? 'active' : 'inactive',
         createdAt: result.createdAt,
         updatedAt: result.updatedAt
@@ -694,6 +709,41 @@ export const updateBusAdmin = asyncHandler(async (req: Request, res: Response) =
   } catch (error) {
     logError('Error updating bus admin:', error);
     return sendError(res, 'Failed to update bus admin', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+// Get user by ID for debugging
+export const getUserByIdForDebug = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findById(id).select('-password');
+    if (!user) {
+      return sendNotFound(res, 'User not found');
+    }
+    
+    return sendSuccess(res, {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        company: user.company,
+        aadhaarCard: user.aadhaarCard,
+        position: user.position,
+        address: user.address,
+        salary: user.salary,
+        license: user.license,
+        assignedBus: user.assignedBus,
+        status: user.isActive ? 'active' : 'inactive',
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    }, 'User retrieved successfully');
+  } catch (error) {
+    logError('Error getting user by ID:', error);
+    return sendError(res, 'Failed to get user', HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 });
 
@@ -780,7 +830,7 @@ export const createBusAdmin = asyncHandler(async (req: Request, res: Response) =
 // Create booking manager
 export const createBookingManager = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, company, aadhaarCard, position, address } = req.body;
+    const { name, email, password, phone, company, aadhaarCard, position, address, commission } = req.body;
     const authenticatedReq = req as AuthenticatedRequest;
     const creatorId = authenticatedReq.user?.id;
     
@@ -808,6 +858,7 @@ export const createBookingManager = asyncHandler(async (req: Request, res: Respo
       aadhaarCard,
       position,
       address,
+      commission,
       isActive: true,
       isEmailVerified: false,
     });
@@ -827,6 +878,7 @@ export const createBookingManager = asyncHandler(async (req: Request, res: Respo
         aadhaarCard: user.aadhaarCard,
         position: user.position,
         address: user.address,
+        commission: user.commission,
         isActive: user.isActive,
         isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,
@@ -843,7 +895,7 @@ export const createBookingManager = asyncHandler(async (req: Request, res: Respo
 // Create bus employee
 export const createBusEmployee = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, company, aadhaarCard, position, address, subrole } = req.body;
+    const { name, email, password, phone, company, aadhaarCard, position, address, subrole, salary, license, assignedBus } = req.body;
     const authenticatedReq = req as AuthenticatedRequest;
     const creatorId = authenticatedReq.user?.id;
     
@@ -872,6 +924,9 @@ export const createBusEmployee = asyncHandler(async (req: Request, res: Response
       aadhaarCard,
       position,
       address,
+      salary,
+      license,
+      assignedBus,
       isActive: true,
       isEmailVerified: false,
     });

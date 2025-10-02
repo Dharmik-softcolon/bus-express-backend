@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { USER_ROLES, BUS_EMPLOYEE_SUBROLES } from '../constants';
 
-// User interface
+// User interface - Unified for all roles
 export interface IUser extends Document {
   _id: string;
   name: string;
@@ -23,6 +23,14 @@ export interface IUser extends Document {
   aadhaarCard?: string;
   position?: string;
   address?: string;
+  // Employee-specific fields
+  license?: string; // For drivers
+  assignedBus?: string; // For drivers/helpers
+  joiningDate?: Date;
+  salary?: number; // For BUS_ADMIN and BUS_EMPLOYEE
+  commission?: number; // For BOOKING_MAN
+  totalTrips?: number;
+  rating?: number;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -119,6 +127,39 @@ const userSchema = new Schema<IUser>({
     type: String,
     trim: true,
     maxlength: [500, 'Address cannot exceed 500 characters'],
+  },
+  // Employee-specific fields
+  license: {
+    type: String,
+    trim: true,
+    uppercase: true,
+  },
+  assignedBus: {
+    type: String,
+    trim: true,
+  },
+  joiningDate: {
+    type: Date,
+    default: Date.now,
+  },
+  salary: {
+    type: Number,
+    min: [0, 'Salary cannot be negative'],
+  },
+  commission: {
+    type: Number,
+    min: [0, 'Commission cannot be negative'],
+    max: [100, 'Commission cannot exceed 100%'],
+  },
+  totalTrips: {
+    type: Number,
+    default: 0,
+  },
+  rating: {
+    type: Number,
+    default: 5.0,
+    min: [0, 'Rating cannot be negative'],
+    max: [5, 'Rating cannot exceed 5'],
   },
 }, {
   timestamps: true,

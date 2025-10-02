@@ -2,10 +2,10 @@ import { Request, Response } from 'express';
 import { Trip } from '../models/Trip';
 import { Bus } from '../models/Bus';
 import { Route } from '../models/Route';
-import { Employee } from '../models/Employee';
+import { User } from '../models/User';
 import { Booking } from '../models/Booking';
 import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
-import { HTTP_STATUS, API_MESSAGES } from '../constants';
+import { HTTP_STATUS, API_MESSAGES, USER_ROLES } from '../constants';
 import { logError } from '../utils/logger';
 
 // Create a new trip
@@ -37,15 +37,15 @@ export const createTrip = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // Validate that driver exists
-    const driverData = await Employee.findById(driver);
-    if (!driverData || driverData.role !== 'driver') {
+    const driverData = await User.findById(driver);
+    if (!driverData || driverData.role !== USER_ROLES.BUS_EMPLOYEE || driverData.subrole !== 'DRIVER') {
       return sendBadRequest(res, 'Invalid driver');
     }
 
     // Validate helper if provided
     if (helper) {
-      const helperData = await Employee.findById(helper);
-      if (!helperData || helperData.role !== 'helper') {
+      const helperData = await User.findById(helper);
+      if (!helperData || helperData.role !== USER_ROLES.BUS_EMPLOYEE || helperData.subrole !== 'HELPER') {
         return sendBadRequest(res, 'Invalid helper');
       }
     }
