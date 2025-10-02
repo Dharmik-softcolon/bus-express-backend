@@ -276,7 +276,7 @@ export const createBookingManager = asyncHandler(async (req: Request, res: Respo
   try {
     const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id || '';
-    const { name, email, password, phone, position, address } = req.body;
+    const { name, email, password, phone, position, address, commission } = req.body;
     
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -299,6 +299,7 @@ export const createBookingManager = asyncHandler(async (req: Request, res: Respo
       role: USER_ROLES.BOOKING_MAN,
       position,
       address,
+      commission: commission ? parseFloat(commission) : 0,
       createdBy: userId,
       isActive: true,
       isEmailVerified: true,
@@ -317,6 +318,7 @@ export const createBookingManager = asyncHandler(async (req: Request, res: Respo
         role: user.role,
         position: user.position,
         address: user.address,
+        commission: user.commission,
         isActive: user.isActive,
         isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,

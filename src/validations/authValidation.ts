@@ -125,16 +125,24 @@ export const createBookingManagerValidation = [
     .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
 
   body('phone')
-    .optional()
+    .notEmpty()
+    .withMessage('Phone number is required')
     .trim()
     .isMobilePhone('any')
     .withMessage('Please provide a valid phone number'),
 
   body('position')
-    .optional()
     .trim()
-    .isLength({ max: 100 })
-    .withMessage('Position must be less than 100 characters'),
+    .notEmpty()
+    .withMessage('Position is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Position must be between 2 and 100 characters'),
+
+  body('commission')
+    .notEmpty()
+    .withMessage('Commission is required')
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('Commission must be between 0 and 100'),
 
   body('address')
     .optional()
