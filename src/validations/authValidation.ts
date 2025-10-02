@@ -45,6 +45,104 @@ export const registerValidation = [
     .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
 ];
 
+// Bus employee creation validation
+export const createBusEmployeeValidation = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage('Name can only contain letters and spaces'),
+
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail(),
+
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6, max: 128 })
+    .withMessage('Password must be between 6 and 128 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
+
+  body('phone')
+    .optional()
+    .trim()
+    .isMobilePhone('any')
+    .withMessage('Please provide a valid phone number'),
+
+  body('subrole')
+    .notEmpty()
+    .withMessage('Subrole is required')
+    .isIn(Object.values(BUS_EMPLOYEE_SUBROLES))
+    .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
+
+  body('position')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Position must be less than 100 characters'),
+
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address must be less than 500 characters'),
+];
+
+// Booking manager creation validation
+export const createBookingManagerValidation = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage('Name can only contain letters and spaces'),
+
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail(),
+
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6, max: 128 })
+    .withMessage('Password must be between 6 and 128 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
+
+  body('phone')
+    .optional()
+    .trim()
+    .isMobilePhone('any')
+    .withMessage('Please provide a valid phone number'),
+
+  body('position')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Position must be less than 100 characters'),
+
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address must be less than 500 characters'),
+];
+
 // User update validation (no password)
 export const updateUserValidation = [
   body('name')
@@ -330,12 +428,3 @@ export const createMasterAdminValidation = [
     .withMessage('Address cannot exceed 500 characters'),
 ];
 
-// Bus employee creation validation
-export const createBusEmployeeValidation = [
-  ...registerValidation,
-  body('subrole')
-    .notEmpty()
-    .withMessage('Subrole is required for bus employees')
-    .isIn(Object.values(BUS_EMPLOYEE_SUBROLES))
-    .withMessage(`Subrole must be one of: ${Object.values(BUS_EMPLOYEE_SUBROLES).join(', ')}`),
-];

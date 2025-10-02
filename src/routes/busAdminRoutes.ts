@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, busAdminOnly } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
-import { getAllUsersValidation, getUserByIdValidation, updateUserByIdValidation, deleteUserValidation } from '../validations/authValidation';
+import { getAllUsersValidation, getUserByIdValidation, updateUserByIdValidation, deleteUserValidation, createBusEmployeeValidation, createBookingManagerValidation } from '../validations/authValidation';
 import {
   getBusAdminDashboard,
   getBusEmployees,
@@ -28,15 +28,15 @@ router.get('/dashboard', getBusAdminDashboard);
 // Bus employee management
 router.get('/bus-employees', paginationMiddleware, [...getAllUsersValidation, validateRequest], getBusEmployees);
 router.get('/bus-employees/:id', [...getUserByIdValidation, validateRequest], getBusEmployeeById);
-router.post('/bus-employees', createBusEmployee);
+router.post('/bus-employees', [...createBusEmployeeValidation, validateRequest], createBusEmployee);
 router.put('/bus-employees/:id', [...updateUserByIdValidation, validateRequest], updateBusEmployee);
 router.delete('/bus-employees/:id', [...getUserByIdValidation, validateRequest], deleteBusEmployee);
 router.put('/bus-employees/:id/toggle-status', [...getUserByIdValidation, validateRequest], toggleBusEmployeeStatus);
 
 // Booking manager management
-router.post('/booking-managers', createBookingManager);
+router.post('/booking-managers', [...createBookingManagerValidation, validateRequest], createBookingManager);
 router.get('/booking-managers', paginationMiddleware, [...getAllUsersValidation, validateRequest], getBookingManagers);
-router.put('/booking-managers/:id', updateBookingManager);
-router.delete('/booking-managers/:id', deleteBookingManager);
+router.put('/booking-managers/:id', [...updateUserByIdValidation, validateRequest], updateBookingManager);
+router.delete('/booking-managers/:id', [...getUserByIdValidation, validateRequest], deleteBookingManager);
 
 export default router;
