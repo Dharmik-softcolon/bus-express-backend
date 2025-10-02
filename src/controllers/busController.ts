@@ -1,22 +1,34 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
-import { BusService } from '../services/busService';
+import { Bus, IBus } from '../models/Bus';
 import { API_MESSAGES } from '../constants';
 import { logError } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
-
-const busService = new BusService();
 
 // Create bus (Admin/Operator only)
 export const createBus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const busData = req.body;
     const authenticatedReq = req as AuthenticatedRequest;
-    const operatorId = authenticatedReq.user?.id || '';
+    const operatorId = authenticatedReq.user?.id;
 
-    const bus = await busService.createBus(busData, operatorId);
+    if (!operatorId) {
+      return sendBadRequest(res, 'Operator ID not found');
+    }
 
-    return sendCreated(res, { bus }, API_MESSAGES.BUS_CREATED);
+    // Check if bus number already exists
+    const existingBus = await Bus.findOne({ busNumber: busData.busNumber });
+    if (existingBus) {
+      return sendBadRequest(res, 'Bus with this number already exists');
+    }
+
+    const bus = await Bus.create({
+      ...busData,
+      operator: operatorId,
+      status: 'active',
+    });
+
+    return sendCreated(res, { bus }, 'Bus created successfully');
   } catch (error) {
     logError('Create bus error', error);
     return sendBadRequest(res, error instanceof Error ? error.message : 'Bus creation failed');
@@ -33,20 +45,38 @@ export const getAllBuses = asyncHandler(async (req: Request, res: Response) => {
 
     const { type, status, operator, search } = req.query;
 
-    const result = await busService.getBuses(
-      { type: type as string, status: status as string, operator: operator as string, search: search as string },
-      { page, limit, skip }
-    );
+    // Build filter
+    const filter: any = {};
+    if (type) filter.type = type;
+    if (status) filter.status = status;
+    if (operator) filter.operator = operator;
+    if (search) {
+      filter.$or = [
+        { busNumber: { $regex: search, $options: 'i' } },
+        { busName: { $regex: search, $options: 'i' } },
+        { manufacturer: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const buses = await Bus.find(filter)
+      .populate('operator', 'name email')
+      .populate('driver', 'name phone')
+      .populate('helper', 'name phone')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Bus.countDocuments(filter);
 
     return sendSuccess(res, {
-      buses: result.buses,
+      buses,
       pagination: {
         page,
         limit,
-        total: result.total,
-        pages: Math.ceil(result.total / limit),
+        total,
+        pages: Math.ceil(total / limit),
       },
-    });
+    }, 'Buses retrieved successfully');
   } catch (error) {
     logError('Get all buses error', error);
     return sendError(res, 'Failed to get buses');
@@ -58,13 +88,16 @@ export const getBusById = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const bus = await busService.getBusById(id);
+    const bus = await Bus.findById(id)
+      .populate('operator', 'name email phone')
+      .populate('driver', 'name phone licenseNumber')
+      .populate('helper', 'name phone');
 
     if (!bus) {
       return sendNotFound(res, 'Bus not found');
     }
 
-    return sendSuccess(res, { bus });
+    return sendSuccess(res, { bus }, 'Bus retrieved successfully');
   } catch (error) {
     logError('Get bus by ID error', error);
     return sendError(res, 'Failed to get bus');
@@ -77,16 +110,35 @@ export const updateBus = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const updateData = req.body;
     const authenticatedReq = req as AuthenticatedRequest;
-    const userId = authenticatedReq.user?.id || '';
-    const userRole = authenticatedReq.user?.role || '';
+    const userId = authenticatedReq.user?.id;
+    const userRole = authenticatedReq.user?.role;
 
-    const updatedBus = await busService.updateBus(id, updateData, userId, userRole);
+    if (!userId) {
+      return sendBadRequest(res, 'User ID not found');
+    }
+
+    // Check if bus exists and user has permission
+    const bus = await Bus.findById(id);
+    if (!bus) {
+      return sendNotFound(res, 'Bus not found');
+    }
+
+    // Check permissions
+    if (userRole !== 'MASTER_ADMIN' && bus.operator.toString() !== userId) {
+      return sendBadRequest(res, 'You do not have permission to update this bus');
+    }
+
+    const updatedBus = await Bus.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('operator', 'name email');
 
     if (!updatedBus) {
       return sendNotFound(res, 'Bus not found');
     }
 
-    return sendSuccess(res, { bus: updatedBus }, API_MESSAGES.BUS_UPDATED);
+    return sendSuccess(res, { bus: updatedBus }, 'Bus updated successfully');
   } catch (error) {
     logError('Update bus error', error);
     return sendBadRequest(res, error instanceof Error ? error.message : 'Bus update failed');
@@ -98,12 +150,27 @@ export const deleteBus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const authenticatedReq = req as AuthenticatedRequest;
-    const userId = authenticatedReq.user?.id || '';
-    const userRole = authenticatedReq.user?.role || '';
+    const userId = authenticatedReq.user?.id;
+    const userRole = authenticatedReq.user?.role;
 
-    await busService.deleteBus(id, userId, userRole);
+    if (!userId) {
+      return sendBadRequest(res, 'User ID not found');
+    }
 
-    return sendSuccess(res, null, API_MESSAGES.BUS_DELETED);
+    // Check if bus exists and user has permission
+    const bus = await Bus.findById(id);
+    if (!bus) {
+      return sendNotFound(res, 'Bus not found');
+    }
+
+    // Check permissions
+    if (userRole !== 'MASTER_ADMIN' && bus.operator.toString() !== userId) {
+      return sendBadRequest(res, 'You do not have permission to delete this bus');
+    }
+
+    await Bus.findByIdAndDelete(id);
+
+    return sendSuccess(res, null, 'Bus deleted successfully');
   } catch (error) {
     logError('Delete bus error', error);
     return sendBadRequest(res, error instanceof Error ? error.message : 'Bus deletion failed');
@@ -119,17 +186,25 @@ export const getBusesByOperator = asyncHandler(async (req: Request, res: Respons
     const limit = authenticatedReq.pagination?.limit || 10;
     const skip = authenticatedReq.pagination?.skip || 0;
 
-    const result = await busService.getBusesByOperator(operatorId, { page, limit, skip });
+    const buses = await Bus.find({ operator: operatorId })
+      .populate('operator', 'name email')
+      .populate('driver', 'name phone')
+      .populate('helper', 'name phone')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Bus.countDocuments({ operator: operatorId });
 
     return sendSuccess(res, {
-      buses: result.buses,
+      buses,
       pagination: {
         page,
         limit,
-        total: result.total,
-        pages: Math.ceil(result.total / limit),
+        total,
+        pages: Math.ceil(total / limit),
       },
-    });
+    }, 'Buses retrieved successfully');
   } catch (error) {
     logError('Get buses by operator error', error);
     return sendError(res, 'Failed to get buses');
@@ -142,10 +217,29 @@ export const updateBusStatus = asyncHandler(async (req: Request, res: Response) 
     const { id } = req.params;
     const { status } = req.body;
     const authenticatedReq = req as AuthenticatedRequest;
-    const userId = authenticatedReq.user?.id || '';
-    const userRole = authenticatedReq.user?.role || '';
+    const userId = authenticatedReq.user?.id;
+    const userRole = authenticatedReq.user?.role;
 
-    const updatedBus = await busService.updateBusStatus(id, status, userId, userRole);
+    if (!userId) {
+      return sendBadRequest(res, 'User ID not found');
+    }
+
+    // Check if bus exists and user has permission
+    const bus = await Bus.findById(id);
+    if (!bus) {
+      return sendNotFound(res, 'Bus not found');
+    }
+
+    // Check permissions
+    if (userRole !== 'MASTER_ADMIN' && bus.operator.toString() !== userId) {
+      return sendBadRequest(res, 'You do not have permission to update this bus status');
+    }
+
+    const updatedBus = await Bus.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    ).populate('operator', 'name email');
 
     if (!updatedBus) {
       return sendNotFound(res, 'Bus not found');
@@ -163,12 +257,37 @@ export const getBusStatistics = asyncHandler(async (req: Request, res: Response)
   try {
     const { id } = req.params;
     const authenticatedReq = req as AuthenticatedRequest;
-    const userId = authenticatedReq.user?.id || '';
-    const userRole = authenticatedReq.user?.role || '';
+    const userId = authenticatedReq.user?.id;
+    const userRole = authenticatedReq.user?.role;
 
-    const statistics = await busService.getBusStatistics(id, userId, userRole);
+    if (!userId) {
+      return sendBadRequest(res, 'User ID not found');
+    }
 
-    return sendSuccess(res, statistics);
+    // Check if bus exists and user has permission
+    const bus = await Bus.findById(id);
+    if (!bus) {
+      return sendNotFound(res, 'Bus not found');
+    }
+
+    // Check permissions
+    if (userRole !== 'MASTER_ADMIN' && bus.operator.toString() !== userId) {
+      return sendBadRequest(res, 'You do not have permission to view this bus statistics');
+    }
+
+    // Get basic bus statistics
+    const statistics = {
+      busId: bus._id,
+      busNumber: bus.busNumber,
+      busName: bus.busName,
+      status: bus.status,
+      totalSeats: bus.totalSeats,
+      availableSeats: bus.availableSeats,
+      createdAt: bus.createdAt,
+      updatedAt: bus.updatedAt,
+    };
+
+    return sendSuccess(res, statistics, 'Bus statistics retrieved successfully');
   } catch (error) {
     logError('Get bus statistics error', error);
     return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to get statistics');

@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { Expense } from '../models/Expense';
 import { Bus } from '../models/Bus';
-import { sendResponse } from '../utils/responseHandler';
-import { HTTP_STATUS, API_MESSAGES } from '../constants';
-import { logger } from '../utils/logger';
+import { asyncHandler } from '../utils/responseHandler';
+import { sendSuccess, sendError, sendNotFound, sendCreated } from '../utils/responseHandler';
+import { logError } from '../utils/logger';
 
 // Create a new expense
-export const createExpense = async (req: Request, res: Response) => {
+export const createExpense = asyncHandler(async (req: Request, res: Response) => {
   try {
     const expense = new Expense(req.body);
     await expense.save();
@@ -14,16 +14,15 @@ export const createExpense = async (req: Request, res: Response) => {
     // Populate the expense with bus details
     await expense.populate('bus', 'busNumber busName');
 
-    logger.info(`Expense created: ${expense.type} - ${expense.amount}`);
-    return sendResponse(res, HTTP_STATUS.CREATED, true, 'Expense created successfully', expense);
+    return sendCreated(res, expense, 'Expense created successfully');
   } catch (error) {
-    logger.error('Error creating expense:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error creating expense:', error);
+    return sendError(res, 'Failed to create expense');
   }
-};
+});
 
 // Get all expenses with pagination and filters
-export const getAllExpenses = async (req: Request, res: Response) => {
+export const getAllExpenses = asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       page = 1,
@@ -49,31 +48,34 @@ export const getAllExpenses = async (req: Request, res: Response) => {
       };
     }
 
+    const skip = (Number(page) - 1) * Number(limit);
+
     const expenses = await Expense.find(filter)
       .populate('bus', 'busNumber busName')
       .populate('approvedBy', 'name email')
       .sort({ date: -1 })
-      .limit(Number(limit) * 1)
-      .skip((Number(page) - 1) * Number(limit));
+      .limit(Number(limit))
+      .skip(skip);
 
     const total = await Expense.countDocuments(filter);
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       expenses,
       pagination: {
-        current: Number(page),
-        pages: Math.ceil(total / Number(limit)),
+        page: Number(page),
+        limit: Number(limit),
         total,
+        pages: Math.ceil(total / Number(limit)),
       },
-    });
+    }, 'Expenses retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching expenses:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching expenses:', error);
+    return sendError(res, 'Failed to fetch expenses');
   }
-};
+});
 
 // Get expense by ID
-export const getExpenseById = async (req: Request, res: Response) => {
+export const getExpenseById = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -82,18 +84,18 @@ export const getExpenseById = async (req: Request, res: Response) => {
       .populate('approvedBy', 'name email');
 
     if (!expense) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Expense not found');
+      return sendNotFound(res, 'Expense not found');
     }
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, expense);
+    return sendSuccess(res, expense, 'Expense retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching expense:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching expense:', error);
+    return sendError(res, 'Failed to fetch expense');
   }
-};
+});
 
 // Update expense
-export const updateExpense = async (req: Request, res: Response) => {
+export const updateExpense = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -106,37 +108,35 @@ export const updateExpense = async (req: Request, res: Response) => {
       .populate('approvedBy', 'name email');
 
     if (!expense) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Expense not found');
+      return sendNotFound(res, 'Expense not found');
     }
 
-    logger.info(`Expense updated: ${expense.type} - ${expense.amount}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Expense updated successfully', expense);
+    return sendSuccess(res, expense, 'Expense updated successfully');
   } catch (error) {
-    logger.error('Error updating expense:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error updating expense:', error);
+    return sendError(res, 'Failed to update expense');
   }
-};
+});
 
 // Delete expense
-export const deleteExpense = async (req: Request, res: Response) => {
+export const deleteExpense = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
     const expense = await Expense.findByIdAndDelete(id);
     if (!expense) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Expense not found');
+      return sendNotFound(res, 'Expense not found');
     }
 
-    logger.info(`Expense deleted: ${expense.type} - ${expense.amount}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Expense deleted successfully');
+    return sendSuccess(res, expense, 'Expense deleted successfully');
   } catch (error) {
-    logger.error('Error deleting expense:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error deleting expense:', error);
+    return sendError(res, 'Failed to delete expense');
   }
-};
+});
 
 // Approve expense
-export const approveExpense = async (req: Request, res: Response) => {
+export const approveExpense = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { approvedBy, notes } = req.body;
@@ -155,19 +155,18 @@ export const approveExpense = async (req: Request, res: Response) => {
       .populate('approvedBy', 'name email');
 
     if (!expense) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Expense not found');
+      return sendNotFound(res, 'Expense not found');
     }
 
-    logger.info(`Expense approved: ${expense.type} - ${expense.amount}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Expense approved successfully', expense);
+    return sendSuccess(res, expense, 'Expense approved successfully');
   } catch (error) {
-    logger.error('Error approving expense:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error approving expense:', error);
+    return sendError(res, 'Failed to approve expense');
   }
-};
+});
 
 // Reject expense
-export const rejectExpense = async (req: Request, res: Response) => {
+export const rejectExpense = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
@@ -184,19 +183,18 @@ export const rejectExpense = async (req: Request, res: Response) => {
       .populate('approvedBy', 'name email');
 
     if (!expense) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Expense not found');
+      return sendNotFound(res, 'Expense not found');
     }
 
-    logger.info(`Expense rejected: ${expense.type} - ${expense.amount}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Expense rejected successfully', expense);
+    return sendSuccess(res, expense, 'Expense rejected successfully');
   } catch (error) {
-    logger.error('Error rejecting expense:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error rejecting expense:', error);
+    return sendError(res, 'Failed to reject expense');
   }
-};
+});
 
 // Get expense analytics
-export const getExpenseAnalytics = async (req: Request, res: Response) => {
+export const getExpenseAnalytics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { period = 'monthly', startDate, endDate, bus } = req.query;
 
@@ -268,9 +266,9 @@ export const getExpenseAnalytics = async (req: Request, res: Response) => {
       byType: analytics,
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, result);
+    return sendSuccess(res, result, 'Expense analytics retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching expense analytics:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching expense analytics:', error);
+    return sendError(res, 'Failed to fetch expense analytics');
   }
-};
+});

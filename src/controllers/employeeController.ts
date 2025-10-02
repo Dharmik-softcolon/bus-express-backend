@@ -2,15 +2,13 @@ import { Request, Response } from 'express';
 import { Employee } from '../models/Employee';
 import { Bus } from '../models/Bus';
 import { Trip } from '../models/Trip';
-import { sendResponse } from '../utils/responseHandler';
-import { HTTP_STATUS, API_MESSAGES } from '../constants';
-import { logger } from '../utils/logger';
+import { asyncHandler } from '../utils/responseHandler';
+import { sendSuccess, sendError, sendNotFound, sendBadRequest, sendCreated } from '../utils/responseHandler';
+import { logError } from '../utils/logger';
 
 // Create a new employee
-export const createEmployee = async (req: Request, res: Response) => {
+export const createEmployee = asyncHandler(async (req: Request, res: Response) => {
   try {
-    console.log(req.body,"kkkk")
-    
     // Check role hierarchy permissions
     const userRole = (req as any).user?.role;
     const targetRole = req.body.role;
@@ -24,23 +22,21 @@ export const createEmployee = async (req: Request, res: Response) => {
     
     // Check if user can create the target role
     if (!userRole || !roleHierarchy[userRole]?.includes(targetRole)) {
-      return sendResponse(res, HTTP_STATUS.FORBIDDEN, false, 
-        `You don't have permission to create ${targetRole} role`);
+      return sendBadRequest(res, `You don't have permission to create ${targetRole} role`);
     }
     
     const employee = new Employee(req.body);
     await employee.save();
 
-    logger.info(`Employee created: ${employee.name}`);
-    return sendResponse(res, HTTP_STATUS.CREATED, true, 'Employee created successfully', employee);
+    return sendCreated(res, employee, 'Employee created successfully');
   } catch (error) {
-    logger.error('Error creating employee:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error creating employee:', error);
+    return sendError(res, 'Failed to create employee');
   }
-};
+});
 
 // Get all employees with pagination and filters
-export const getAllEmployees = async (req: Request, res: Response) => {
+export const getAllEmployees = asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       page = 1,
@@ -67,35 +63,38 @@ export const getAllEmployees = async (req: Request, res: Response) => {
       ];
     }
 
+    const skip = (Number(page) - 1) * Number(limit);
+
     const employees = await Employee.find(filter)
       .sort({ createdAt: -1 })
-      .limit(Number(limit) * 1)
-      .skip((Number(page) - 1) * Number(limit));
+      .limit(Number(limit))
+      .skip(skip);
 
     const total = await Employee.countDocuments(filter);
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       employees,
       pagination: {
-        current: Number(page),
-        pages: Math.ceil(total / Number(limit)),
+        page: Number(page),
+        limit: Number(limit),
         total,
+        pages: Math.ceil(total / Number(limit)),
       },
-    });
+    }, 'Employees retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching employees:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching employees:', error);
+    return sendError(res, 'Failed to fetch employees');
   }
-};
+});
 
 // Get employee by ID
-export const getEmployeeById = async (req: Request, res: Response) => {
+export const getEmployeeById = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
     const employee = await Employee.findById(id);
     if (!employee) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Employee not found');
+      return sendNotFound(res, 'Employee not found');
     }
 
     // Get assigned buses for drivers
@@ -115,19 +114,19 @@ export const getEmployeeById = async (req: Request, res: Response) => {
       .sort({ departureDate: -1 })
       .limit(10);
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       employee,
       assignedBuses,
       assignedTrips,
-    });
+    }, 'Employee retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching employee:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching employee:', error);
+    return sendError(res, 'Failed to fetch employee');
   }
-};
+});
 
 // Update employee
-export const updateEmployee = async (req: Request, res: Response) => {
+export const updateEmployee = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -138,19 +137,18 @@ export const updateEmployee = async (req: Request, res: Response) => {
     });
 
     if (!employee) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Employee not found');
+      return sendNotFound(res, 'Employee not found');
     }
 
-    logger.info(`Employee updated: ${employee.name}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Employee updated successfully', employee);
+    return sendSuccess(res, employee, 'Employee updated successfully');
   } catch (error) {
-    logger.error('Error updating employee:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error updating employee:', error);
+    return sendError(res, 'Failed to update employee');
   }
-};
+});
 
 // Delete employee
-export const deleteEmployee = async (req: Request, res: Response) => {
+export const deleteEmployee = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -160,7 +158,7 @@ export const deleteEmployee = async (req: Request, res: Response) => {
     });
 
     if (assignedBuses.length > 0) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Cannot delete employee assigned to buses');
+      return sendBadRequest(res, 'Cannot delete employee assigned to buses');
     }
 
     // Check if employee has any upcoming trips
@@ -170,24 +168,23 @@ export const deleteEmployee = async (req: Request, res: Response) => {
     });
 
     if (upcomingTrips.length > 0) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Cannot delete employee with upcoming trips');
+      return sendBadRequest(res, 'Cannot delete employee with upcoming trips');
     }
 
     const employee = await Employee.findByIdAndDelete(id);
     if (!employee) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Employee not found');
+      return sendNotFound(res, 'Employee not found');
     }
 
-    logger.info(`Employee deleted: ${employee.name}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Employee deleted successfully');
+    return sendSuccess(res, employee, 'Employee deleted successfully');
   } catch (error) {
-    logger.error('Error deleting employee:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error deleting employee:', error);
+    return sendError(res, 'Failed to delete employee');
   }
-};
+});
 
 // Update employee status
-export const updateEmployeeStatus = async (req: Request, res: Response) => {
+export const updateEmployeeStatus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -199,19 +196,18 @@ export const updateEmployeeStatus = async (req: Request, res: Response) => {
     );
 
     if (!employee) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Employee not found');
+      return sendNotFound(res, 'Employee not found');
     }
 
-    logger.info(`Employee status updated: ${employee.name} - ${status}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Employee status updated successfully', employee);
+    return sendSuccess(res, employee, 'Employee status updated successfully');
   } catch (error) {
-    logger.error('Error updating employee status:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error updating employee status:', error);
+    return sendError(res, 'Failed to update employee status');
   }
-};
+});
 
 // Get employee statistics
-export const getEmployeeStatistics = async (req: Request, res: Response) => {
+export const getEmployeeStatistics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const stats = await Employee.aggregate([
       {
@@ -231,13 +227,13 @@ export const getEmployeeStatistics = async (req: Request, res: Response) => {
     const totalEmployees = await Employee.countDocuments();
     const activeEmployees = await Employee.countDocuments({ status: 'active' });
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       totalEmployees,
       activeEmployees,
       byRole: stats,
-    });
+    }, 'Employee statistics retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching employee statistics:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching employee statistics:', error);
+    return sendError(res, 'Failed to fetch employee statistics');
   }
-};
+});

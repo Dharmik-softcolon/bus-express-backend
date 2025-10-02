@@ -4,12 +4,12 @@ import { Trip } from '../models/Trip';
 import { Bus } from '../models/Bus';
 import { Route } from '../models/Route';
 import { Expense } from '../models/Expense';
-import { sendResponse } from '../utils/responseHandler';
-import { HTTP_STATUS, API_MESSAGES } from '../constants';
-import { logger } from '../utils/logger';
+import { asyncHandler } from '../utils/responseHandler';
+import { sendSuccess, sendError } from '../utils/responseHandler';
+import { logError } from '../utils/logger';
 
 // Get revenue analytics
-export const getRevenueAnalytics = async (req: Request, res: Response) => {
+export const getRevenueAnalytics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { period = 'monthly', startDate, endDate, route } = req.query;
 
@@ -124,15 +124,15 @@ export const getRevenueAnalytics = async (req: Request, res: Response) => {
       monthly: monthlyRevenue,
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, result);
+    return sendSuccess(res, result, 'Revenue analytics retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching revenue analytics:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching revenue analytics:', error);
+    return sendError(res, 'Failed to fetch revenue analytics');
   }
-};
+});
 
 // Get booking analytics
-export const getBookingAnalytics = async (req: Request, res: Response) => {
+export const getBookingAnalytics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { period = 'monthly', startDate, endDate } = req.query;
 
@@ -232,15 +232,15 @@ export const getBookingAnalytics = async (req: Request, res: Response) => {
       popularRoutes,
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, result);
+    return sendSuccess(res, result, 'Booking analytics retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching booking analytics:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching booking analytics:', error);
+    return sendError(res, 'Failed to fetch booking analytics');
   }
-};
+});
 
 // Get bus performance analytics
-export const getBusPerformanceAnalytics = async (req: Request, res: Response) => {
+export const getBusPerformanceAnalytics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { period = 'monthly', startDate, endDate } = req.query;
 
@@ -336,15 +336,15 @@ export const getBusPerformanceAnalytics = async (req: Request, res: Response) =>
       utilization: busUtilization,
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, result);
+    return sendSuccess(res, result, 'Bus performance analytics retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching bus performance analytics:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching bus performance analytics:', error);
+    return sendError(res, 'Failed to fetch bus performance analytics');
   }
-};
+});
 
 // Get dashboard summary
-export const getDashboardSummary = async (req: Request, res: Response) => {
+export const getDashboardSummary = asyncHandler(async (req: Request, res: Response) => {
   try {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -462,9 +462,9 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       },
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, result);
+    return sendSuccess(res, result, 'Dashboard summary retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching dashboard summary:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching dashboard summary:', error);
+    return sendError(res, 'Failed to fetch dashboard summary');
   }
-};
+});

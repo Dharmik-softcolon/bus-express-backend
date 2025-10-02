@@ -4,12 +4,12 @@ import { Bus } from '../models/Bus';
 import { Route } from '../models/Route';
 import { Employee } from '../models/Employee';
 import { Booking } from '../models/Booking';
-import { sendResponse } from '../utils/responseHandler';
+import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
 import { HTTP_STATUS, API_MESSAGES } from '../constants';
-import { logger } from '../utils/logger';
+import { logError } from '../utils/logger';
 
 // Create a new trip
-export const createTrip = async (req: Request, res: Response) => {
+export const createTrip = asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       route,
@@ -27,26 +27,26 @@ export const createTrip = async (req: Request, res: Response) => {
     // Validate that bus exists and get available seats
     const busData = await Bus.findById(bus);
     if (!busData) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Bus not found');
+      return sendNotFound(res, 'Bus not found');
     }
 
     // Validate that route exists
     const routeData = await Route.findById(route);
     if (!routeData) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Route not found');
+      return sendNotFound(res, 'Route not found');
     }
 
     // Validate that driver exists
     const driverData = await Employee.findById(driver);
     if (!driverData || driverData.role !== 'driver') {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Invalid driver');
+      return sendBadRequest(res, 'Invalid driver');
     }
 
     // Validate helper if provided
     if (helper) {
       const helperData = await Employee.findById(helper);
       if (!helperData || helperData.role !== 'helper') {
-        return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Invalid helper');
+        return sendBadRequest(res, 'Invalid helper');
       }
     }
 
@@ -54,7 +54,7 @@ export const createTrip = async (req: Request, res: Response) => {
     const tripCount = await Trip.countDocuments();
     const tripNumber = `TR-${String(tripCount + 1).padStart(3, '0')}`;
 
-    const trip = new Trip({
+    const trip = await Trip.create({
       tripNumber,
       route,
       bus,
@@ -67,9 +67,8 @@ export const createTrip = async (req: Request, res: Response) => {
       dropPoints,
       availableSeats: busData.totalSeats,
       fare,
+      status: 'scheduled',
     });
-
-    await trip.save();
 
     // Populate the trip with related data
     await trip.populate([
@@ -79,16 +78,16 @@ export const createTrip = async (req: Request, res: Response) => {
       { path: 'helper', select: 'name phone' },
     ]);
 
-    logger.info(`Trip created: ${tripNumber}`);
-    return sendResponse(res, HTTP_STATUS.CREATED, true, API_MESSAGES.SUCCESS, trip);
+    logError(`Trip created: ${tripNumber}`, null);
+    return sendCreated(res, { trip }, 'Trip created successfully');
   } catch (error) {
-    logger.error('Error creating trip:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error creating trip:', error);
+    return sendError(res, 'Failed to create trip');
   }
-};
+});
 
 // Get all trips with pagination and filters
-export const getAllTrips = async (req: Request, res: Response) => {
+export const getAllTrips = asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       page = 1,
@@ -124,33 +123,36 @@ export const getAllTrips = async (req: Request, res: Response) => {
       };
     }
 
+    const skip = (Number(page) - 1) * Number(limit);
+
     const trips = await Trip.find(filter)
       .populate('route', 'routeName from to')
       .populate('bus', 'busNumber busName type')
       .populate('driver', 'name phone')
       .populate('helper', 'name phone')
       .sort({ departureDate: 1, departureTime: 1 })
-      .limit(Number(limit) * 1)
-      .skip((Number(page) - 1) * Number(limit));
+      .limit(Number(limit))
+      .skip(skip);
 
     const total = await Trip.countDocuments(filter);
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       trips,
       pagination: {
-        current: Number(page),
-        pages: Math.ceil(total / Number(limit)),
+        page: Number(page),
+        limit: Number(limit),
         total,
+        pages: Math.ceil(total / Number(limit)),
       },
-    });
+    }, 'Trips retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching trips:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching trips:', error);
+    return sendError(res, 'Failed to fetch trips');
   }
-};
+});
 
 // Get trip by ID
-export const getTripById = async (req: Request, res: Response) => {
+export const getTripById = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -161,7 +163,7 @@ export const getTripById = async (req: Request, res: Response) => {
       .populate('helper', 'name phone');
 
     if (!trip) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Trip not found');
+      return sendNotFound(res, 'Trip not found');
     }
 
     // Get bookings for this trip
@@ -169,18 +171,18 @@ export const getTripById = async (req: Request, res: Response) => {
       .populate('user', 'name email phone')
       .select('seats totalAmount bookingStatus paymentStatus');
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       trip,
       bookings,
-    });
+    }, 'Trip retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching trip:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching trip:', error);
+    return sendError(res, 'Failed to fetch trip');
   }
-};
+});
 
 // Update trip
-export const updateTrip = async (req: Request, res: Response) => {
+export const updateTrip = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -195,43 +197,41 @@ export const updateTrip = async (req: Request, res: Response) => {
       .populate('helper', 'name phone');
 
     if (!trip) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Trip not found');
+      return sendNotFound(res, 'Trip not found');
     }
 
-    logger.info(`Trip updated: ${trip.tripNumber}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, trip);
+    return sendSuccess(res, trip, 'Trip updated successfully');
   } catch (error) {
-    logger.error('Error updating trip:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error updating trip:', error);
+    return sendError(res, 'Failed to update trip');
   }
-};
+});
 
 // Delete trip
-export const deleteTrip = async (req: Request, res: Response) => {
+export const deleteTrip = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
     // Check if trip has any bookings
     const bookings = await Booking.find({ trip: id });
     if (bookings.length > 0) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Cannot delete trip with existing bookings');
+      return sendBadRequest(res, 'Cannot delete trip with existing bookings');
     }
 
     const trip = await Trip.findByIdAndDelete(id);
     if (!trip) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Trip not found');
+      return sendNotFound(res, 'Trip not found');
     }
 
-    logger.info(`Trip deleted: ${trip.tripNumber}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Trip deleted successfully');
+    return sendSuccess(res, trip, 'Trip deleted successfully');
   } catch (error) {
-    logger.error('Error deleting trip:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error deleting trip:', error);
+    return sendError(res, 'Failed to delete trip');
   }
-};
+});
 
 // Update trip status
-export const updateTripStatus = async (req: Request, res: Response) => {
+export const updateTripStatus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -247,19 +247,18 @@ export const updateTripStatus = async (req: Request, res: Response) => {
       .populate('helper', 'name phone');
 
     if (!trip) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Trip not found');
+      return sendNotFound(res, 'Trip not found');
     }
 
-    logger.info(`Trip status updated: ${trip.tripNumber} - ${status}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Trip status updated successfully', trip);
+    return sendSuccess(res, trip, 'Trip status updated successfully');
   } catch (error) {
-    logger.error('Error updating trip status:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error updating trip status:', error);
+    return sendError(res, 'Failed to update trip status');
   }
-};
+});
 
 // Get trip statistics
-export const getTripStatistics = async (req: Request, res: Response) => {
+export const getTripStatistics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { period = 'monthly', startDate, endDate } = req.query;
 
@@ -310,9 +309,9 @@ export const getTripStatistics = async (req: Request, res: Response) => {
       totalRevenue: 0,
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, result);
+    return sendSuccess(res, result, 'Trip statistics retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching trip statistics:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching trip statistics:', error);
+    return sendError(res, 'Failed to fetch trip statistics');
   }
-};
+});

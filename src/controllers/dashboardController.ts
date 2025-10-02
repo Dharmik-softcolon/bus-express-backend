@@ -2,19 +2,12 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError, asyncHandler } from '../utils/responseHandler';
 import { logError } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
-import { UserService } from '../services/userService';
-import { BusService } from '../services/busService';
-import { BookingService } from '../services/bookingService';
-import { TripService } from '../services/tripService';
-import { RouteService } from '../services/routeService';
-import { ExpenseService } from '../services/expenseService';
-
-const userService = new UserService();
-const busService = new BusService();
-const bookingService = new BookingService();
-const tripService = new TripService();
-const routeService = new RouteService();
-const expenseService = new ExpenseService();
+import { User } from '../models/User';
+import { Bus } from '../models/Bus';
+import { Booking } from '../models/Booking';
+import { Trip } from '../models/Trip';
+import { Route } from '../models/Route';
+import { Expense } from '../models/Expense';
 
 // Master Admin Dashboard
 export const getMasterAdminDashboard = asyncHandler(async (req: Request, res: Response) => {
@@ -22,7 +15,7 @@ export const getMasterAdminDashboard = asyncHandler(async (req: Request, res: Re
     const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id || '';
 
-    // Get dashboard statistics
+    // Get dashboard statistics using direct MongoDB queries
     const [
       totalBusOwners,
       totalBuses,
@@ -30,11 +23,18 @@ export const getMasterAdminDashboard = asyncHandler(async (req: Request, res: Re
       totalBookings,
       totalRevenue
     ] = await Promise.all([
-      userService.getUsersCount({ role: 'BUS_OWNER' }),
-      busService.getBusesCount(),
-      routeService.getRoutesCount(),
-      bookingService.getBookingsCount(),
-      bookingService.getTotalRevenue()
+      User.countDocuments({ role: 'BUS_OWNER' }),
+      Bus.countDocuments(),
+      Route.countDocuments(),
+      Booking.countDocuments(),
+      Booking.aggregate([
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' }
+          }
+        }
+      ]).then(result => result[0]?.total || 0)
     ]);
 
     const dashboardData = {
@@ -76,7 +76,7 @@ export const getBusOwnerDashboard = asyncHandler(async (req: Request, res: Respo
     const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id || '';
 
-    // Get dashboard statistics for bus owner
+    // Get dashboard statistics for bus owner using direct MongoDB queries
     const [
       totalBuses,
       totalRoutes,
@@ -84,11 +84,19 @@ export const getBusOwnerDashboard = asyncHandler(async (req: Request, res: Respo
       totalRevenue,
       totalEmployees
     ] = await Promise.all([
-      busService.getBusesCount({ ownerId: userId }),
-      routeService.getRoutesCount({ ownerId: userId }),
-      bookingService.getBookingsCount({ ownerId: userId }),
-      bookingService.getTotalRevenue({ ownerId: userId }),
-      userService.getUsersCount({ role: 'BUS_ADMIN', createdBy: userId })
+      Bus.countDocuments({ owner: userId }),
+      Route.countDocuments({ owner: userId }),
+      Booking.countDocuments({ owner: userId }),
+      Booking.aggregate([
+        { $match: { owner: userId } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' }
+          }
+        }
+      ]).then(result => result[0]?.total || 0),
+      User.countDocuments({ role: 'BUS_ADMIN', createdBy: userId })
     ]);
 
     const dashboardData = {
@@ -131,7 +139,8 @@ export const getBusAdminDashboard = asyncHandler(async (req: Request, res: Respo
     const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id || '';
 
-    // Get dashboard statistics for bus admin
+    // Get dashboard statistics for bus admin using direct MongoDB queries
+    const today = new Date().toISOString().split('T')[0];
     const [
       totalTrips,
       totalBookings,
@@ -139,11 +148,17 @@ export const getBusAdminDashboard = asyncHandler(async (req: Request, res: Respo
       totalEmployees,
       todayBookings
     ] = await Promise.all([
-      tripService.getTripsCount({ adminId: userId }),
-      bookingService.getBookingsCount({ adminId: userId }),
-      routeService.getRoutesCount({ adminId: userId }),
-      userService.getUsersCount({ role: 'BUS_EMPLOYEE', createdBy: userId }),
-      bookingService.getBookingsCount({ adminId: userId, date: new Date().toISOString().split('T')[0] })
+      Trip.countDocuments({ admin: userId }),
+      Booking.countDocuments({ admin: userId }),
+      Route.countDocuments({ admin: userId }),
+      User.countDocuments({ role: 'BUS_EMPLOYEE', createdBy: userId }),
+      Booking.countDocuments({ 
+        admin: userId, 
+        journeyDate: { 
+          $gte: new Date(today), 
+          $lt: new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000) 
+        } 
+      })
     ]);
 
     const dashboardData = {
@@ -186,7 +201,8 @@ export const getBookingManagerDashboard = asyncHandler(async (req: Request, res:
     const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id || '';
 
-    // Get dashboard statistics for booking manager
+    // Get dashboard statistics for booking manager using direct MongoDB queries
+    const today = new Date().toISOString().split('T')[0];
     const [
       totalBookings,
       todayBookings,
@@ -194,11 +210,25 @@ export const getBookingManagerDashboard = asyncHandler(async (req: Request, res:
       totalRevenue,
       cancelledBookings
     ] = await Promise.all([
-      bookingService.getBookingsCount({ managerId: userId }),
-      bookingService.getBookingsCount({ managerId: userId, date: new Date().toISOString().split('T')[0] }),
-      bookingService.getBookingsCount({ managerId: userId, status: 'pending' }),
-      bookingService.getTotalRevenue({ managerId: userId }),
-      bookingService.getBookingsCount({ managerId: userId, status: 'cancelled' })
+      Booking.countDocuments({ manager: userId }),
+      Booking.countDocuments({ 
+        manager: userId, 
+        journeyDate: { 
+          $gte: new Date(today), 
+          $lt: new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000) 
+        } 
+      }),
+      Booking.countDocuments({ manager: userId, bookingStatus: 'pending' }),
+      Booking.aggregate([
+        { $match: { manager: userId } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' }
+          }
+        }
+      ]).then(result => result[0]?.total || 0),
+      Booking.countDocuments({ manager: userId, bookingStatus: 'cancelled' })
     ]);
 
     const dashboardData = {
@@ -241,7 +271,8 @@ export const getBusEmployeeDashboard = asyncHandler(async (req: Request, res: Re
     const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id || '';
 
-    // Get dashboard statistics for bus employee
+    // Get dashboard statistics for bus employee using direct MongoDB queries
+    const today = new Date().toISOString().split('T')[0];
     const [
       assignedTrips,
       completedTrips,
@@ -249,11 +280,25 @@ export const getBusEmployeeDashboard = asyncHandler(async (req: Request, res: Re
       todayTrips,
       upcomingTrips
     ] = await Promise.all([
-      tripService.getTripsCount({ employeeId: userId }),
-      tripService.getTripsCount({ employeeId: userId, status: 'completed' }),
-      expenseService.getExpensesCount({ employeeId: userId }),
-      tripService.getTripsCount({ employeeId: userId, date: new Date().toISOString().split('T')[0] }),
-      tripService.getTripsCount({ employeeId: userId, status: 'scheduled' })
+      Trip.countDocuments({ 
+        $or: [{ driver: userId }, { helper: userId }] 
+      }),
+      Trip.countDocuments({ 
+        $or: [{ driver: userId }, { helper: userId }], 
+        status: 'completed' 
+      }),
+      Expense.countDocuments({ employee: userId }),
+      Trip.countDocuments({ 
+        $or: [{ driver: userId }, { helper: userId }], 
+        departureDate: { 
+          $gte: new Date(today), 
+          $lt: new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000) 
+        } 
+      }),
+      Trip.countDocuments({ 
+        $or: [{ driver: userId }, { helper: userId }], 
+        status: 'scheduled' 
+      })
     ]);
 
     const dashboardData = {
@@ -297,7 +342,7 @@ export const getCustomerDashboard = asyncHandler(async (req: Request, res: Respo
     const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id || '';
 
-    // Get dashboard statistics for customer
+    // Get dashboard statistics for customer using direct MongoDB queries
     const [
       totalBookings,
       activeBookings,
@@ -305,11 +350,19 @@ export const getCustomerDashboard = asyncHandler(async (req: Request, res: Respo
       cancelledBookings,
       totalSpent
     ] = await Promise.all([
-      bookingService.getBookingsCount({ customerId: userId }),
-      bookingService.getBookingsCount({ customerId: userId, status: 'confirmed' }),
-      bookingService.getBookingsCount({ customerId: userId, status: 'completed' }),
-      bookingService.getBookingsCount({ customerId: userId, status: 'cancelled' }),
-      bookingService.getTotalRevenue({ customerId: userId })
+      Booking.countDocuments({ user: userId }),
+      Booking.countDocuments({ user: userId, bookingStatus: 'confirmed' }),
+      Booking.countDocuments({ user: userId, bookingStatus: 'completed' }),
+      Booking.countDocuments({ user: userId, bookingStatus: 'cancelled' }),
+      Booking.aggregate([
+        { $match: { user: userId } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' }
+          }
+        }
+      ]).then(result => result[0]?.total || 0)
     ]);
 
     const dashboardData = {

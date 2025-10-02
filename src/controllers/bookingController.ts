@@ -3,28 +3,28 @@ import { Booking, IBooking } from '../models/Booking';
 import { Bus } from '../models/Bus';
 import { Route } from '../models/Route';
 import { Trip } from '../models/Trip';
-import { sendResponse } from '../utils/responseHandler';
+import { sendSuccess, sendError, sendBadRequest, sendNotFound, sendCreated, asyncHandler } from '../utils/responseHandler';
 import { HTTP_STATUS, API_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS } from '../constants';
 import { generateBookingReference } from '../utils/auth';
 import { AuthenticatedRequest } from '../types';
-import { logger } from '../utils/logger';
+import { logError } from '../utils/logger';
 
 // Create booking
-export const createBooking = async (req: Request, res: Response) => {
+export const createBooking = asyncHandler(async (req: Request, res: Response) => {
   try {
-  const {
+    const {
       trip,
-    seats,
-    boardingPoint,
-    droppingPoint,
-    paymentMethod,
-  } = req.body;
+      seats,
+      boardingPoint,
+      droppingPoint,
+      paymentMethod,
+    } = req.body;
 
-  const authenticatedReq = req as AuthenticatedRequest;
-  const userId = authenticatedReq.user?.id;
+    const authenticatedReq = req as AuthenticatedRequest;
+    const userId = authenticatedReq.user?.id;
 
     if (!userId) {
-      return sendResponse(res, HTTP_STATUS.UNAUTHORIZED, false, 'User not authenticated');
+      return sendBadRequest(res, 'User not authenticated');
     }
 
     // Validate trip exists
@@ -33,26 +33,26 @@ export const createBooking = async (req: Request, res: Response) => {
       .populate('route', 'routeName from to');
 
     if (!tripData) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Trip not found');
+      return sendNotFound(res, 'Trip not found');
     }
 
     // Check if trip is available for booking
     if (tripData.status !== 'scheduled') {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Trip is not available for booking');
-  }
+      return sendBadRequest(res, 'Trip is not available for booking');
+    }
 
-  // Check if journey date is in the future
+    // Check if journey date is in the future
     if (tripData.departureDate < new Date()) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Cannot book past trips');
-  }
+      return sendBadRequest(res, 'Cannot book past trips');
+    }
 
-  // Check seat availability
+    // Check seat availability
     if (seats.length > tripData.availableSeats) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Not enough seats available');
-  }
+      return sendBadRequest(res, 'Not enough seats available');
+    }
 
-  // Check if seats are already booked
-  const existingBookings = await Booking.find({
+    // Check if seats are already booked
+    const existingBookings = await Booking.find({
       trip,
       bookingStatus: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] },
     });
@@ -67,31 +67,31 @@ export const createBooking = async (req: Request, res: Response) => {
     const requestedSeats = seats.map((seat: any) => seat.seatNumber);
     const conflictingSeats = requestedSeats.filter((seatNumber: any) => bookedSeats.has(seatNumber));
 
-  if (conflictingSeats.length > 0) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, `Seats ${conflictingSeats.join(', ')} are already booked`);
-  }
+    if (conflictingSeats.length > 0) {
+      return sendBadRequest(res, `Seats ${conflictingSeats.join(', ')} are already booked`);
+    }
 
     // Calculate total amount
     const totalAmount = seats.length * tripData.fare;
 
-  // Generate booking reference
-  const bookingReference = generateBookingReference();
+    // Generate booking reference
+    const bookingReference = generateBookingReference();
 
     // Create booking
-    const booking = new Booking({
-    bookingReference,
-    user: userId,
+    const booking = await Booking.create({
+      bookingReference,
+      user: userId,
       bus: tripData.bus._id,
       route: tripData.route._id,
       journeyDate: tripData.departureDate,
-    seats,
-    totalAmount,
-    boardingPoint,
-    droppingPoint,
-    paymentMethod,
+      seats,
+      totalAmount,
+      boardingPoint,
+      droppingPoint,
+      paymentMethod,
+      bookingStatus: BOOKING_STATUS.PENDING,
+      paymentStatus: PAYMENT_STATUS.PENDING,
     });
-
-    await booking.save();
 
     // Update trip available seats and total bookings
     await Trip.findByIdAndUpdate(trip, {
@@ -102,22 +102,22 @@ export const createBooking = async (req: Request, res: Response) => {
     });
 
     // Populate booking with related data
-  await booking.populate([
-    { path: 'user', select: 'name email phone' },
-    { path: 'bus', select: 'busNumber busName type' },
-    { path: 'route', select: 'routeName from to' },
-  ]);
+    await booking.populate([
+      { path: 'user', select: 'name email phone' },
+      { path: 'bus', select: 'busNumber busName type' },
+      { path: 'route', select: 'routeName from to' },
+    ]);
 
-    logger.info(`Booking created: ${bookingReference}`);
-    return sendResponse(res, HTTP_STATUS.CREATED, true, 'Booking created successfully', booking);
+    logError(`Booking created: ${bookingReference}`, null);
+    return sendCreated(res, { booking }, 'Booking created successfully');
   } catch (error) {
-    logger.error('Error creating booking:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error creating booking:', error);
+    return sendError(res, 'Failed to create booking');
   }
-};
+});
 
 // Get all bookings
-export const getAllBookings = async (req: Request, res: Response) => {
+export const getAllBookings = asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       page = 1,
@@ -130,114 +130,117 @@ export const getAllBookings = async (req: Request, res: Response) => {
       tripId,
     } = req.query;
 
-  const authenticatedReq = req as AuthenticatedRequest;
+    const authenticatedReq = req as AuthenticatedRequest;
     const currentUser = authenticatedReq.user;
 
-  // Build filter
-  const filter: any = {};
-  if (status) filter.bookingStatus = status;
-  if (paymentStatus) filter.paymentStatus = paymentStatus;
-  if (userId) filter.user = userId;
-  if (busId) filter.bus = busId;
-  if (routeId) filter.route = routeId;
+    // Build filter
+    const filter: any = {};
+    if (status) filter.bookingStatus = status;
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
+    if (userId) filter.user = userId;
+    if (busId) filter.bus = busId;
+    if (routeId) filter.route = routeId;
     if (tripId) filter.trip = tripId;
 
-  // If user is not admin, only show their bookings
+    // If user is not admin, only show their bookings
     if (currentUser?.role !== 'admin') {
       filter.user = currentUser?.id;
-  }
+    }
 
-  const bookings = await Booking.find(filter)
-    .populate([
-      { path: 'user', select: 'name email phone' },
-      { path: 'bus', select: 'busNumber busName type' },
-      { path: 'route', select: 'routeName from to' },
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const bookings = await Booking.find(filter)
+      .populate([
+        { path: 'user', select: 'name email phone' },
+        { path: 'bus', select: 'busNumber busName type' },
+        { path: 'route', select: 'routeName from to' },
         { path: 'trip', select: 'tripNumber departureTime arrivalTime' },
-    ])
-    .sort({ createdAt: -1 })
-      .limit(Number(limit) * 1)
-      .skip((Number(page) - 1) * Number(limit));
+      ])
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip(skip);
 
-  const total = await Booking.countDocuments(filter);
+    const total = await Booking.countDocuments(filter);
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
-    bookings,
-    pagination: {
-        current: Number(page),
+    return sendSuccess(res, {
+      bookings,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
         pages: Math.ceil(total / Number(limit)),
-      total,
-    },
-  });
+      },
+    }, 'Bookings retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching bookings:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching bookings:', error);
+    return sendError(res, 'Failed to fetch bookings');
   }
-};
+});
 
 // Get booking by ID
-export const getBookingById = async (req: Request, res: Response) => {
+export const getBookingById = asyncHandler(async (req: Request, res: Response) => {
   try {
-  const { id } = req.params;
-  const authenticatedReq = req as AuthenticatedRequest;
+    const { id } = req.params;
+    const authenticatedReq = req as AuthenticatedRequest;
     const currentUser = authenticatedReq.user;
 
     const booking = await Booking.findById(id)
       .populate([
-    { path: 'user', select: 'name email phone' },
-    { path: 'bus', select: 'busNumber busName type' },
-    { path: 'route', select: 'routeName from to' },
+        { path: 'user', select: 'name email phone' },
+        { path: 'bus', select: 'busNumber busName type' },
+        { path: 'route', select: 'routeName from to' },
         { path: 'trip', select: 'tripNumber departureTime arrivalTime' },
-  ]);
+      ]);
 
-  if (!booking) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Booking not found');
-  }
-
-  // Check if user can access this booking
-    if (currentUser?.role !== 'admin' && booking.user._id.toString() !== currentUser?.id) {
-      return sendResponse(res, HTTP_STATUS.FORBIDDEN, false, 'Access denied');
+    if (!booking) {
+      return sendNotFound(res, 'Booking not found');
     }
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, booking);
+    // Check if user can access this booking
+    if (currentUser?.role !== 'admin' && booking.user._id.toString() !== currentUser?.id) {
+      return sendBadRequest(res, 'Access denied');
+    }
+
+    return sendSuccess(res, { booking }, 'Booking retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching booking:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching booking:', error);
+    return sendError(res, 'Failed to fetch booking');
   }
-};
+});
 
 // Get booking by reference
-export const getBookingByReference = async (req: Request, res: Response) => {
+export const getBookingByReference = asyncHandler(async (req: Request, res: Response) => {
   try {
-  const { reference } = req.params;
-  const authenticatedReq = req as AuthenticatedRequest;
+    const { reference } = req.params;
+    const authenticatedReq = req as AuthenticatedRequest;
     const currentUser = authenticatedReq.user;
 
     const booking = await Booking.findOne({ bookingReference: reference.toUpperCase() })
       .populate([
-    { path: 'user', select: 'name email phone' },
-    { path: 'bus', select: 'busNumber busName type' },
-    { path: 'route', select: 'routeName from to' },
+        { path: 'user', select: 'name email phone' },
+        { path: 'bus', select: 'busNumber busName type' },
+        { path: 'route', select: 'routeName from to' },
         { path: 'trip', select: 'tripNumber departureTime arrivalTime' },
-  ]);
+      ]);
 
-  if (!booking) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Booking not found');
-  }
-
-  // Check if user can access this booking
-    if (currentUser?.role !== 'admin' && booking.user._id.toString() !== currentUser?.id) {
-      return sendResponse(res, HTTP_STATUS.FORBIDDEN, false, 'Access denied');
+    if (!booking) {
+      return sendNotFound(res, 'Booking not found');
     }
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, booking);
+    // Check if user can access this booking
+    if (currentUser?.role !== 'admin' && booking.user._id.toString() !== currentUser?.id) {
+      return sendBadRequest(res, 'Access denied');
+    }
+
+    return sendSuccess(res, { booking }, 'Booking retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching booking by reference:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching booking by reference:', error);
+    return sendError(res, 'Failed to fetch booking');
   }
-};
+});
 
 // Update booking status
-export const updateBookingStatus = async (req: Request, res: Response) => {
+export const updateBookingStatus = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -245,66 +248,66 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
     const booking = await Booking.findByIdAndUpdate(
       id,
       { bookingStatus: status },
-    { new: true, runValidators: true }
+      { new: true, runValidators: true }
     )
       .populate([
-    { path: 'user', select: 'name email phone' },
-    { path: 'bus', select: 'busNumber busName type' },
-    { path: 'route', select: 'routeName from to' },
+        { path: 'user', select: 'name email phone' },
+        { path: 'bus', select: 'busNumber busName type' },
+        { path: 'route', select: 'routeName from to' },
         { path: 'trip', select: 'tripNumber departureTime arrivalTime' },
       ]);
 
     if (!booking) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Booking not found');
+      return sendNotFound(res, 'Booking not found');
     }
 
-    logger.info(`Booking status updated: ${booking.bookingReference} - ${status}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Booking status updated successfully', booking);
+    logError(`Booking status updated: ${booking.bookingReference} - ${status}`, null);
+    return sendSuccess(res, { booking }, 'Booking status updated successfully');
   } catch (error) {
-    logger.error('Error updating booking status:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error updating booking status:', error);
+    return sendError(res, 'Failed to update booking status');
   }
-};
+});
 
 // Cancel booking
-export const cancelBooking = async (req: Request, res: Response) => {
+export const cancelBooking = asyncHandler(async (req: Request, res: Response) => {
   try {
-  const { id } = req.params;
-  const { cancellationReason } = req.body;
-  const authenticatedReq = req as AuthenticatedRequest;
+    const { id } = req.params;
+    const { cancellationReason } = req.body;
+    const authenticatedReq = req as AuthenticatedRequest;
     const currentUser = authenticatedReq.user;
 
-  const booking = await Booking.findById(id);
+    const booking = await Booking.findById(id);
 
-  if (!booking) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Booking not found');
-  }
+    if (!booking) {
+      return sendNotFound(res, 'Booking not found');
+    }
 
-  // Check if user can cancel this booking
+    // Check if user can cancel this booking
     if (currentUser?.role !== 'admin' && booking.user.toString() !== currentUser?.id) {
-      return sendResponse(res, HTTP_STATUS.FORBIDDEN, false, 'Access denied');
-  }
+      return sendBadRequest(res, 'Access denied');
+    }
 
-  // Check if booking can be cancelled
-  if (booking.bookingStatus === BOOKING_STATUS.CANCELLED) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Booking is already cancelled');
-  }
+    // Check if booking can be cancelled
+    if (booking.bookingStatus === BOOKING_STATUS.CANCELLED) {
+      return sendBadRequest(res, 'Booking is already cancelled');
+    }
 
-  if (booking.bookingStatus === BOOKING_STATUS.COMPLETED) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'Cannot cancel completed booking');
+    if (booking.bookingStatus === BOOKING_STATUS.COMPLETED) {
+      return sendBadRequest(res, 'Cannot cancel completed booking');
     }
 
     // Calculate refund amount (you can implement your refund policy here)
     const refundAmount = booking.totalAmount * 0.8; // 80% refund
 
-  // Update booking
-  booking.bookingStatus = BOOKING_STATUS.CANCELLED;
-  booking.cancellationReason = cancellationReason;
-  booking.cancelledAt = new Date();
-  booking.refundAmount = refundAmount;
+    // Update booking
+    booking.bookingStatus = BOOKING_STATUS.CANCELLED;
+    booking.cancellationReason = cancellationReason;
+    booking.cancelledAt = new Date();
+    booking.refundAmount = refundAmount;
     booking.paymentStatus = PAYMENT_STATUS.REFUNDED;
 
-  await booking.save();
+    await booking.save();
 
     // Update trip available seats
     await Trip.findByIdAndUpdate(booking.trip, {
@@ -314,16 +317,16 @@ export const cancelBooking = async (req: Request, res: Response) => {
       },
     });
 
-    logger.info(`Booking cancelled: ${booking.bookingReference}`);
-    return sendResponse(res, HTTP_STATUS.OK, true, 'Booking cancelled successfully', booking);
+    logError(`Booking cancelled: ${booking.bookingReference}`, null);
+    return sendSuccess(res, { booking }, 'Booking cancelled successfully');
   } catch (error) {
-    logger.error('Error cancelling booking:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error cancelling booking:', error);
+    return sendError(res, 'Failed to cancel booking');
   }
-};
+});
 
 // Get booking statistics
-export const getBookingStatistics = async (req: Request, res: Response) => {
+export const getBookingStatistics = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { period = 'monthly', startDate, endDate } = req.query;
 
@@ -346,9 +349,9 @@ export const getBookingStatistics = async (req: Request, res: Response) => {
 
     const stats = await Booking.aggregate([
       { $match: dateFilter },
-    {
-      $group: {
-        _id: null,
+      {
+        $group: {
+          _id: null,
           totalBookings: { $sum: 1 },
           totalRevenue: { $sum: '$totalAmount' },
           totalPassengers: { $sum: { $size: '$seats' } },
@@ -365,8 +368,8 @@ export const getBookingStatistics = async (req: Request, res: Response) => {
             $sum: { $cond: [{ $eq: ['$bookingStatus', 'completed'] }, 1, 0] },
           },
         },
-    },
-  ]);
+      },
+    ]);
 
     const result = stats[0] || {
       totalBookings: 0,
@@ -378,9 +381,9 @@ export const getBookingStatistics = async (req: Request, res: Response) => {
       completedBookings: 0,
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, result);
+    return sendSuccess(res, result, 'Booking statistics retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching booking statistics:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching booking statistics:', error);
+    return sendError(res, 'Failed to fetch booking statistics');
   }
-};
+});

@@ -3,12 +3,12 @@ import { Trip } from '../models/Trip';
 import { Bus } from '../models/Bus';
 import { Route } from '../models/Route';
 import { Booking } from '../models/Booking';
-import { sendResponse } from '../utils/responseHandler';
-import { HTTP_STATUS, API_MESSAGES } from '../constants';
-import { logger } from '../utils/logger';
+import { asyncHandler } from '../utils/responseHandler';
+import { sendSuccess, sendError, sendNotFound, sendBadRequest } from '../utils/responseHandler';
+import { logError } from '../utils/logger';
 
 // Search buses for booking
-export const searchBuses = async (req: Request, res: Response) => {
+export const searchBuses = asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       from,
@@ -23,7 +23,7 @@ export const searchBuses = async (req: Request, res: Response) => {
     } = req.query;
 
     if (!from || !to || !departureDate) {
-      return sendResponse(res, HTTP_STATUS.BAD_REQUEST, false, 'From, to, and departure date are required');
+      return sendBadRequest(res, 'From, to, and departure date are required');
     }
 
     const searchDate = new Date(departureDate as string);
@@ -50,7 +50,7 @@ export const searchBuses = async (req: Request, res: Response) => {
     const routeIds = routes.map(route => route._id);
 
     if (routeIds.length === 0) {
-      return sendResponse(res, HTTP_STATUS.OK, true, 'No routes found', []);
+      return sendSuccess(res, [], 'No routes found');
     }
 
     // Build trip filter
@@ -157,7 +157,7 @@ export const searchBuses = async (req: Request, res: Response) => {
       dropPoints: trip.dropPoints,
     }));
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       trips: formattedTrips,
       total: formattedTrips.length,
       searchCriteria: {
@@ -171,15 +171,15 @@ export const searchBuses = async (req: Request, res: Response) => {
         maxPrice,
         amenities,
       },
-    });
+    }, 'Bus search completed successfully');
   } catch (error) {
-    logger.error('Error searching buses:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error searching buses:', error);
+    return sendError(res, 'Failed to search buses');
   }
-};
+});
 
 // Get popular routes
-export const getPopularRoutes = async (req: Request, res: Response) => {
+export const getPopularRoutes = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { limit = 10 } = req.query;
 
@@ -211,15 +211,15 @@ export const getPopularRoutes = async (req: Request, res: Response) => {
       { $limit: Number(limit) },
     ]);
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, popularRoutes);
+    return sendSuccess(res, popularRoutes, 'Popular routes retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching popular routes:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching popular routes:', error);
+    return sendError(res, 'Failed to fetch popular routes');
   }
-};
+});
 
 // Get available seats for a trip
-export const getAvailableSeats = async (req: Request, res: Response) => {
+export const getAvailableSeats = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { tripId } = req.params;
 
@@ -228,7 +228,7 @@ export const getAvailableSeats = async (req: Request, res: Response) => {
       .populate('route', 'routeName from to');
 
     if (!trip) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Trip not found');
+      return sendNotFound(res, 'Trip not found');
     }
 
     // Get booked seats for this trip
@@ -256,7 +256,7 @@ export const getAvailableSeats = async (req: Request, res: Response) => {
       });
     }
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, {
+    return sendSuccess(res, {
       trip: {
         id: trip._id,
         tripNumber: trip.tripNumber,
@@ -269,15 +269,15 @@ export const getAvailableSeats = async (req: Request, res: Response) => {
       totalSeats,
       availableSeats: seats.filter(seat => seat.isAvailable).length,
       bookedSeats: seats.filter(seat => !seat.isAvailable).length,
-    });
+    }, 'Available seats retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching available seats:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching available seats:', error);
+    return sendError(res, 'Failed to fetch available seats');
   }
-};
+});
 
 // Get trip details for booking
-export const getTripDetails = async (req: Request, res: Response) => {
+export const getTripDetails = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { tripId } = req.params;
 
@@ -292,7 +292,7 @@ export const getTripDetails = async (req: Request, res: Response) => {
       });
 
     if (!trip) {
-      return sendResponse(res, HTTP_STATUS.NOT_FOUND, false, 'Trip not found');
+      return sendNotFound(res, 'Trip not found');
     }
 
     // Get recent bookings for this trip
@@ -323,20 +323,20 @@ export const getTripDetails = async (req: Request, res: Response) => {
       recentBookings,
     };
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, tripDetails);
+    return sendSuccess(res, tripDetails, 'Trip details retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching trip details:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching trip details:', error);
+    return sendError(res, 'Failed to fetch trip details');
   }
-};
+});
 
 // Get search suggestions
-export const getSearchSuggestions = async (req: Request, res: Response) => {
+export const getSearchSuggestions = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { query, type = 'all' } = req.query;
 
     if (!query || (query as string).length < 2) {
-      return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, []);
+      return sendSuccess(res, [], 'Search suggestions retrieved successfully');
     }
 
     const searchQuery = { $regex: query, $options: 'i' };
@@ -401,9 +401,9 @@ export const getSearchSuggestions = async (req: Request, res: Response) => {
       );
     }
 
-    return sendResponse(res, HTTP_STATUS.OK, true, API_MESSAGES.SUCCESS, suggestions.slice(0, 10));
+    return sendSuccess(res, suggestions.slice(0, 10), 'Search suggestions retrieved successfully');
   } catch (error) {
-    logger.error('Error fetching search suggestions:', error);
-    return sendResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, false, API_MESSAGES.INTERNAL_ERROR);
+    logError('Error fetching search suggestions:', error);
+    return sendError(res, 'Failed to fetch search suggestions');
   }
-};
+});
