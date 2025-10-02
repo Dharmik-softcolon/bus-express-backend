@@ -58,8 +58,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Find user by email (include password field for comparison)
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return sendBadRequest(res, 'Invalid email or password');
     }
@@ -70,6 +70,13 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // Verify password
+    console.log('Password comparison:', {
+      providedPassword: password,
+      hashedPassword: user.password,
+      passwordType: typeof user.password,
+      passwordLength: user.password?.length
+    });
+    
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
       return sendBadRequest(res, 'Invalid email or password');
@@ -184,8 +191,8 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
       return sendBadRequest(res, 'User ID not found in token');
     }
 
-    // Find user
-    const user = await User.findById(userId);
+    // Find user (include password field for comparison)
+    const user = await User.findById(userId).select('+password');
     if (!user) {
       return sendNotFound(res, 'User not found');
     }
