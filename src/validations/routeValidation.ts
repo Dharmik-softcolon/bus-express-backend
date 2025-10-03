@@ -13,85 +13,81 @@ export const createRouteValidation = [
     .notEmpty()
     .withMessage('From location is required')
     .isObject()
-    .withMessage('From must be an object')
-    .custom((from) => {
-      if (!from.city || !from.state) {
-        throw new Error('From location must have city and state');
-      }
-      if (!from.coordinates || !from.coordinates.latitude || !from.coordinates.longitude) {
-        throw new Error('From location must have valid coordinates');
-      }
-      if (typeof from.coordinates.latitude !== 'number' || typeof from.coordinates.longitude !== 'number') {
-        throw new Error('Coordinates must be numbers');
-      }
-      if (from.coordinates.latitude < -90 || from.coordinates.latitude > 90) {
-        throw new Error('Latitude must be between -90 and 90');
-      }
-      if (from.coordinates.longitude < -180 || from.coordinates.longitude > 180) {
-        throw new Error('Longitude must be between -180 and 180');
-      }
-      return true;
-    }),
+    .withMessage('From must be an object'),
+
+  body('from.city')
+    .trim()
+    .notEmpty()
+    .withMessage('From city is required'),
+
+  body('from.state')
+    .trim()
+    .notEmpty()
+    .withMessage('From state is required'),
 
   body('to')
     .notEmpty()
     .withMessage('To location is required')
     .isObject()
-    .withMessage('To must be an object')
-    .custom((to) => {
-      if (!to.city || !to.state) {
-        throw new Error('To location must have city and state');
-      }
-      if (!to.coordinates || !to.coordinates.latitude || !to.coordinates.longitude) {
-        throw new Error('To location must have valid coordinates');
-      }
-      if (typeof to.coordinates.latitude !== 'number' || typeof to.coordinates.longitude !== 'number') {
-        throw new Error('Coordinates must be numbers');
-      }
-      if (to.coordinates.latitude < -90 || to.coordinates.latitude > 90) {
-        throw new Error('Latitude must be between -90 and 90');
-      }
-      if (to.coordinates.longitude < -180 || to.coordinates.longitude > 180) {
-        throw new Error('Longitude must be between -180 and 180');
-      }
-      return true;
-    }),
+    .withMessage('To must be an object'),
+
+  body('to.city')
+    .trim()
+    .notEmpty()
+    .withMessage('To city is required'),
+
+  body('to.state')
+    .trim()
+    .notEmpty()
+    .withMessage('To state is required'),
 
   body('distance')
-    .optional()
+    .notEmpty()
+    .withMessage('Distance is required')
     .isFloat({ min: 0 })
     .withMessage('Distance must be a positive number'),
 
-  body('duration')
-    .optional()
+  body('time')
+    .notEmpty()
+    .withMessage('Time is required')
     .isInt({ min: 0 })
-    .withMessage('Duration must be a non-negative integer'),
+    .withMessage('Time must be a non-negative integer'),
 
-  body('stops')
+  body('pickupPoints')
     .optional()
     .isArray()
-    .withMessage('Stops must be an array')
-    .custom((stops) => {
-      if (stops && stops.length > 0) {
-        for (const stop of stops) {
-          if (!stop.name || !stop.city) {
-            throw new Error('Each stop must have name and city');
-          }
-          if (!stop.coordinates || !stop.coordinates.latitude || !stop.coordinates.longitude) {
-            throw new Error('Each stop must have valid coordinates');
-          }
-          if (typeof stop.coordinates.latitude !== 'number' || typeof stop.coordinates.longitude !== 'number') {
-            throw new Error('Stop coordinates must be numbers');
+    .withMessage('Pickup points must be an array')
+    .custom((pickupPoints) => {
+      if (pickupPoints && pickupPoints.length > 0) {
+        for (const point of pickupPoints) {
+          if (!point.name || typeof point.name !== 'string') {
+            throw new Error('Each pickup point must have a name');
           }
         }
       }
       return true;
     }),
 
-  body('isActive')
+  body('dropPoints')
     .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean value'),
+    .isArray()
+    .withMessage('Drop points must be an array')
+    .custom((dropPoints) => {
+      if (dropPoints && dropPoints.length > 0) {
+        for (const point of dropPoints) {
+          if (!point.name || typeof point.name !== 'string') {
+            throw new Error('Each drop point must have a name');
+          }
+        }
+      }
+      return true;
+    }),
+
+  body('fare')
+    .notEmpty()
+    .withMessage('Fare is required')
+    .isFloat({ min: 0 })
+    .withMessage('Fare must be a positive number'),
 ];
 
 // Get all routes validation (query parameters)
@@ -112,22 +108,17 @@ export const getAllRoutesValidation = [
     .isLength({ max: 100 })
     .withMessage('Search term cannot exceed 100 characters'),
 
-  body('fromCity')
+  body('startCity')
     .optional()
     .trim()
     .isLength({ max: 50 })
-    .withMessage('From city cannot exceed 50 characters'),
+    .withMessage('Start city cannot exceed 50 characters'),
 
-  body('toCity')
+  body('endCity')
     .optional()
     .trim()
     .isLength({ max: 50 })
-    .withMessage('To city cannot exceed 50 characters'),
-
-  body('isActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean value'),
+    .withMessage('End city cannot exceed 50 characters'),
 ];
 
 // Get route by ID validation (no body validation needed for GET)
@@ -144,88 +135,81 @@ export const updateRouteValidation = [
   body('from')
     .optional()
     .isObject()
-    .withMessage('From must be an object')
-    .custom((from) => {
-      if (from) {
-        if (!from.city || !from.state) {
-          throw new Error('From location must have city and state');
-        }
-        if (!from.coordinates || !from.coordinates.latitude || !from.coordinates.longitude) {
-          throw new Error('From location must have valid coordinates');
-        }
-        if (typeof from.coordinates.latitude !== 'number' || typeof from.coordinates.longitude !== 'number') {
-          throw new Error('Coordinates must be numbers');
-        }
-        if (from.coordinates.latitude < -90 || from.coordinates.latitude > 90) {
-          throw new Error('Latitude must be between -90 and 90');
-        }
-        if (from.coordinates.longitude < -180 || from.coordinates.longitude > 180) {
-          throw new Error('Longitude must be between -180 and 180');
-        }
-      }
-      return true;
-    }),
+    .withMessage('From must be an object'),
+
+  body('from.city')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('From city cannot be empty'),
+
+  body('from.state')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('From state cannot be empty'),
 
   body('to')
     .optional()
     .isObject()
-    .withMessage('To must be an object')
-    .custom((to) => {
-      if (to) {
-        if (!to.city || !to.state) {
-          throw new Error('To location must have city and state');
-        }
-        if (!to.coordinates || !to.coordinates.latitude || !to.coordinates.longitude) {
-          throw new Error('To location must have valid coordinates');
-        }
-        if (typeof to.coordinates.latitude !== 'number' || typeof to.coordinates.longitude !== 'number') {
-          throw new Error('Coordinates must be numbers');
-        }
-        if (to.coordinates.latitude < -90 || to.coordinates.latitude > 90) {
-          throw new Error('Latitude must be between -90 and 90');
-        }
-        if (to.coordinates.longitude < -180 || to.coordinates.longitude > 180) {
-          throw new Error('Longitude must be between -180 and 180');
-        }
-      }
-      return true;
-    }),
+    .withMessage('To must be an object'),
+
+  body('to.city')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('To city cannot be empty'),
+
+  body('to.state')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('To state cannot be empty'),
 
   body('distance')
     .optional()
     .isFloat({ min: 0 })
     .withMessage('Distance must be a positive number'),
 
-  body('duration')
+  body('time')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Duration must be a non-negative integer'),
+    .withMessage('Time must be a non-negative integer'),
 
-  body('stops')
+  body('pickupPoints')
     .optional()
     .isArray()
-    .withMessage('Stops must be an array')
-    .custom((stops) => {
-      if (stops && stops.length > 0) {
-        for (const stop of stops) {
-          if (!stop.name || !stop.city) {
-            throw new Error('Each stop must have name and city');
-          }
-          if (!stop.coordinates || !stop.coordinates.latitude || !stop.coordinates.longitude) {
-            throw new Error('Each stop must have valid coordinates');
-          }
-          if (typeof stop.coordinates.latitude !== 'number' || typeof stop.coordinates.longitude !== 'number') {
-            throw new Error('Stop coordinates must be numbers');
+    .withMessage('Pickup points must be an array')
+    .custom((pickupPoints) => {
+      if (pickupPoints && pickupPoints.length > 0) {
+        for (const point of pickupPoints) {
+          if (!point.name || typeof point.name !== 'string') {
+            throw new Error('Each pickup point must have a name');
           }
         }
       }
       return true;
     }),
 
-  body('isActive')
+  body('dropPoints')
     .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean value'),
+    .isArray()
+    .withMessage('Drop points must be an array')
+    .custom((dropPoints) => {
+      if (dropPoints && dropPoints.length > 0) {
+        for (const point of dropPoints) {
+          if (!point.name || typeof point.name !== 'string') {
+            throw new Error('Each drop point must have a name');
+          }
+        }
+      }
+      return true;
+    }),
+
+  body('fare')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Fare must be a positive number'),
 ];
 
 // Delete route validation (no body validation needed for DELETE)
@@ -233,19 +217,19 @@ export const deleteRouteValidation = [];
 
 // Search routes validation
 export const searchRoutesValidation = [
-  body('fromCity')
+  body('startCity')
     .trim()
     .notEmpty()
-    .withMessage('From city is required')
+    .withMessage('Start city is required')
     .isLength({ max: 50 })
-    .withMessage('From city cannot exceed 50 characters'),
+    .withMessage('Start city cannot exceed 50 characters'),
 
-  body('toCity')
+  body('endCity')
     .trim()
     .notEmpty()
-    .withMessage('To city is required')
+    .withMessage('End city is required')
     .isLength({ max: 50 })
-    .withMessage('To city cannot exceed 50 characters'),
+    .withMessage('End city cannot exceed 50 characters'),
 
   body('date')
     .optional()
@@ -271,59 +255,41 @@ export const getPopularRoutesValidation = [
     .withMessage('Period must be week, month, or year'),
 ];
 
-// Add stop to route validation
-export const addStopToRouteValidation = [
-  body('stop')
-    .notEmpty()
-    .withMessage('Stop is required')
-    .isObject()
-    .withMessage('Stop must be an object')
-    .custom((stop) => {
-      if (!stop.name || !stop.city) {
-        throw new Error('Stop must have name and city');
-      }
-      if (!stop.coordinates || !stop.coordinates.latitude || !stop.coordinates.longitude) {
-        throw new Error('Stop must have valid coordinates');
-      }
-      if (typeof stop.coordinates.latitude !== 'number' || typeof stop.coordinates.longitude !== 'number') {
-        throw new Error('Stop coordinates must be numbers');
-      }
-      return true;
-    }),
-
-  body('arrivalTime')
-    .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .withMessage('Arrival time must be in HH:MM format'),
-
-  body('departureTime')
-    .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .withMessage('Departure time must be in HH:MM format'),
-];
-
-// Remove stop from route validation
-export const removeStopFromRouteValidation = [
-  body('stopName')
+// Add pickup point validation
+export const addPickupPointValidation = [
+  body('name')
     .trim()
     .notEmpty()
-    .withMessage('Stop name is required')
+    .withMessage('Pickup point name is required')
     .isLength({ max: 100 })
-    .withMessage('Stop name cannot exceed 100 characters'),
+    .withMessage('Pickup point name cannot exceed 100 characters'),
 ];
 
-// Update route status validation
-export const updateRouteStatusValidation = [
-  body('isActive')
+// Remove pickup point validation
+export const removePickupPointValidation = [
+  body('index')
     .notEmpty()
-    .withMessage('isActive is required')
-    .isBoolean()
-    .withMessage('isActive must be a boolean value'),
+    .withMessage('Index is required')
+    .isInt({ min: 0 })
+    .withMessage('Index must be a non-negative integer'),
+];
 
-  body('reason')
-    .optional()
+// Add drop point validation
+export const addDropPointValidation = [
+  body('name')
     .trim()
-    .isLength({ max: 500 })
-    .withMessage('Reason cannot exceed 500 characters'),
+    .notEmpty()
+    .withMessage('Drop point name is required')
+    .isLength({ max: 100 })
+    .withMessage('Drop point name cannot exceed 100 characters'),
+];
+
+// Remove drop point validation
+export const removeDropPointValidation = [
+  body('index')
+    .notEmpty()
+    .withMessage('Index is required')
+    .isInt({ min: 0 })
+    .withMessage('Index must be a non-negative integer'),
 ];
 

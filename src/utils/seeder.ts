@@ -48,18 +48,20 @@ export class DatabaseSeeder {
         {
           name: 'John Doe',
           email: 'john@example.com',
-          password: await hashPassword('customer123'),
+          password: await hashPassword('employee123'),
           phone: '+919876543213',
-          role: USER_ROLES.CUSTOMER,
+          role: USER_ROLES.BUS_EMPLOYEE,
+          subrole: 'DRIVER',
           isActive: true,
           isEmailVerified: true,
         },
         {
           name: 'Jane Smith',
           email: 'jane@example.com',
-          password: await hashPassword('customer123'),
+          password: await hashPassword('employee123'),
           phone: '+919876543214',
-          role: USER_ROLES.CUSTOMER,
+          role: USER_ROLES.BUS_EMPLOYEE,
+          subrole: 'HELPER',
           isActive: true,
           isEmailVerified: true,
         },
@@ -290,11 +292,11 @@ export class DatabaseSeeder {
       }
 
       // Get sample data
-      const customers = await User.find({ role: USER_ROLES.CUSTOMER });
+      const employees = await User.find({ role: USER_ROLES.BUS_EMPLOYEE });
       const buses = await Bus.find();
       const routes = await Route.find();
 
-      if (customers.length === 0 || buses.length === 0 || routes.length === 0) {
+      if (employees.length === 0 || buses.length === 0 || routes.length === 0) {
         logInfo('Insufficient data for seeding bookings, skipping...');
         return;
       }
@@ -302,7 +304,7 @@ export class DatabaseSeeder {
       const bookings = [
         {
           bookingReference: 'BE20240101001',
-          user: customers[0]._id,
+          user: employees[0]._id,
           bus: buses[0]._id,
           route: routes[0]._id,
           journeyDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
@@ -324,7 +326,7 @@ export class DatabaseSeeder {
         },
         {
           bookingReference: 'BE20240101002',
-          user: customers[1]._id,
+          user: employees[1]._id,
           bus: buses[1]._id,
           route: routes[1]._id,
           journeyDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now

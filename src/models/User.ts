@@ -69,7 +69,7 @@ const userSchema = new Schema<IUser>({
   role: {
     type: String,
     enum: Object.values(USER_ROLES),
-    default: USER_ROLES.CUSTOMER,
+    default: USER_ROLES.BUS_EMPLOYEE,
   },
   subrole: {
     type: String,

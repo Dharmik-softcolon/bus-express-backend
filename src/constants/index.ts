@@ -41,7 +41,6 @@ export const USER_ROLES = {
   BUS_ADMIN: 'BUS_ADMIN',
   BOOKING_MAN: 'BOOKING_MAN',
   BUS_EMPLOYEE: 'BUS_EMPLOYEE',
-  CUSTOMER: 'CUSTOMER',
 } as const;
 
 export const BUS_EMPLOYEE_SUBROLES = {
@@ -84,7 +83,6 @@ export const ROLE_HIERARCHY: Record<string, string[]> = {
   [USER_ROLES.BUS_ADMIN]: [USER_ROLES.BOOKING_MAN, USER_ROLES.BUS_EMPLOYEE],
   [USER_ROLES.BOOKING_MAN]: [],
   [USER_ROLES.BUS_EMPLOYEE]: [],
-  [USER_ROLES.CUSTOMER]: [],
 };
 
 // Role limits

@@ -7,9 +7,10 @@ import {
   deleteRoute,
   searchRoutes,
   getPopularRoutes,
-  addStopToRoute,
-  removeStopFromRoute,
-  updateRouteStatus,
+  addPickupPoint,
+  removePickupPoint,
+  addDropPoint,
+  removeDropPoint,
 } from '../controllers/routeController';
 import { authenticate, busAdminOnly, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
@@ -21,9 +22,10 @@ import {
   deleteRouteValidation,
   searchRoutesValidation,
   getPopularRoutesValidation,
-  addStopToRouteValidation,
-  removeStopFromRouteValidation,
-  updateRouteStatusValidation,
+  addPickupPointValidation,
+  removePickupPointValidation,
+  addDropPointValidation,
+  removeDropPointValidation,
 } from '../validations/routeValidation';
 
 const router = Router();
@@ -44,10 +46,12 @@ router.put('/:id', busOwnerOrBusAdmin, [...updateRouteValidation, validateReques
 
 router.delete('/:id', busOwnerOrBusAdmin, [...deleteRouteValidation, validateRequest], deleteRoute);
 
-router.put('/:id/status', busOwnerOrBusAdmin, [...updateRouteStatusValidation, validateRequest], updateRouteStatus);
+router.post('/:id/pickup-points', busOwnerOrBusAdmin, [...addPickupPointValidation, validateRequest], addPickupPoint);
 
-router.post('/:id/stops', busOwnerOrBusAdmin, [...addStopToRouteValidation, validateRequest], addStopToRoute);
+router.delete('/:id/pickup-points', busOwnerOrBusAdmin, [...removePickupPointValidation, validateRequest], removePickupPoint);
 
-router.delete('/:id/stops', busOwnerOrBusAdmin, [...removeStopFromRouteValidation, validateRequest], removeStopFromRoute);
+router.post('/:id/drop-points', busOwnerOrBusAdmin, [...addDropPointValidation, validateRequest], addDropPoint);
+
+router.delete('/:id/drop-points', busOwnerOrBusAdmin, [...removeDropPointValidation, validateRequest], removeDropPoint);
 
 export default router;

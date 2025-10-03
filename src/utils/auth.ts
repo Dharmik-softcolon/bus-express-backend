@@ -80,10 +80,6 @@ export const isMasterAdmin = (userRole: string): boolean => {
   return userRole === USER_ROLES.MASTER_ADMIN;
 };
 
-// Check if user is customer
-export const isCustomer = (userRole: string): boolean => {
-  return userRole === USER_ROLES.CUSTOMER;
-};
 
 // Format phone number
 export const formatPhoneNumber = (phone: string): string => {

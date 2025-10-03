@@ -90,7 +90,7 @@ export const getBusById = asyncHandler(async (req: Request, res: Response) => {
 
     const bus = await Bus.findById(id)
       .populate('operator', 'name email phone')
-      .populate('driver', 'name phone licenseNumber')
+      .populate('driver', 'name phone license')
       .populate('helper', 'name phone');
 
     if (!bus) {
@@ -124,8 +124,20 @@ export const updateBus = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // Check permissions
-    if (userRole !== 'MASTER_ADMIN' && bus.operator.toString() !== userId) {
-      return sendBadRequest(res, 'You do not have permission to update this bus');
+    // MASTER_ADMIN can update any bus
+    if (userRole === 'MASTER_ADMIN') {
+      // Can update any bus
+    } else if (userRole === 'BUS_OWNER') {
+      // BUS_OWNER can only update their own buses
+      if (bus.operator.toString() !== userId) {
+        return sendBadRequest(res, 'You can only update your own buses');
+      }
+    } else if (userRole === 'BUS_ADMIN') {
+      // For now, BUS_ADMIN cannot update buses
+      // TODO: Add relationship check if BUS_ADMIN works for this BUS_OWNER
+      return sendBadRequest(res, 'BUS_ADMIN cannot update buses directly. Contact BUS_OWNER or MASTER_ADMIN');
+    } else {
+      return sendBadRequest(res, 'You do not have permission to update buses');
     }
 
     const updatedBus = await Bus.findByIdAndUpdate(
@@ -164,8 +176,20 @@ export const deleteBus = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // Check permissions
-    if (userRole !== 'MASTER_ADMIN' && bus.operator.toString() !== userId) {
-      return sendBadRequest(res, 'You do not have permission to delete this bus');
+    // MASTER_ADMIN can delete any bus
+    if (userRole === 'MASTER_ADMIN') {
+      // Can delete any bus
+    } else if (userRole === 'BUS_OWNER') {
+      // BUS_OWNER can only delete their own buses
+      if (bus.operator.toString() !== userId) {
+        return sendBadRequest(res, 'You can only delete your own buses');
+      }
+    } else if (userRole === 'BUS_ADMIN') {
+      // For now, BUS_ADMIN cannot delete buses
+      // TODO: Add relationship check if BUS_ADMIN works for this BUS_OWNER
+      return sendBadRequest(res, 'BUS_ADMIN cannot delete buses directly. Contact BUS_OWNER or MASTER_ADMIN');
+    } else {
+      return sendBadRequest(res, 'You do not have permission to delete buses');
     }
 
     await Bus.findByIdAndDelete(id);

@@ -13,7 +13,11 @@ export const createRoute = asyncHandler(async (req: Request, res: Response) => {
       routeName,
       from,
       to,
-      stops,
+      distance,
+      time,
+      pickupPoints,
+      dropPoints,
+      fare,
     } = req.body;
 
     // Check if route already exists
@@ -26,25 +30,15 @@ export const createRoute = asyncHandler(async (req: Request, res: Response) => {
       return sendBadRequest(res, 'Route between these cities already exists');
     }
 
-    // Calculate distance and duration
-    const distance = calculateDistance(
-      from.coordinates.latitude,
-      from.coordinates.longitude,
-      to.coordinates.latitude,
-      to.coordinates.longitude
-    );
-
-    // Estimate duration based on distance (assuming average speed of 60 km/h)
-    const duration = Math.round(distance * 60 / 60); // Convert to minutes
-
     const route = await Route.create({
       routeName,
       from,
       to,
       distance,
-      duration,
-      stops: stops || [],
-      isActive: true,
+      time,
+      pickupPoints: pickupPoints || [],
+      dropPoints: dropPoints || [],
+      fare,
     });
 
     return sendCreated(res, { route }, 'Route created successfully');
@@ -62,19 +56,18 @@ export const getAllRoutes = asyncHandler(async (req: Request, res: Response) => 
     const limit = authenticatedReq.pagination?.limit || 10;
     const skip = authenticatedReq.pagination?.skip || 0;
 
-    const { fromCity, toCity, isActive, search } = req.query;
+    const { startCity, endCity, search } = req.query;
 
     // Build filter
     const filter: any = {};
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
     
-    if (fromCity || toCity) {
+    if (startCity || endCity) {
       filter.$and = [];
-      if (fromCity) {
-        filter.$and.push({ 'from.city': { $regex: fromCity, $options: 'i' } });
+      if (startCity) {
+        filter.$and.push({ 'from.city': { $regex: startCity, $options: 'i' } });
       }
-      if (toCity) {
-        filter.$and.push({ 'to.city': { $regex: toCity, $options: 'i' } });
+      if (endCity) {
+        filter.$and.push({ 'to.city': { $regex: endCity, $options: 'i' } });
       }
     }
 
@@ -83,6 +76,8 @@ export const getAllRoutes = asyncHandler(async (req: Request, res: Response) => 
         { routeName: { $regex: search, $options: 'i' } },
         { 'from.city': { $regex: search, $options: 'i' } },
         { 'to.city': { $regex: search, $options: 'i' } },
+        { 'from.state': { $regex: search, $options: 'i' } },
+        { 'to.state': { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -138,21 +133,6 @@ export const updateRoute = asyncHandler(async (req: Request, res: Response) => {
       return sendNotFound(res, 'Route not found');
     }
 
-    // If coordinates are being updated, recalculate distance and duration
-    if (updateData.from?.coordinates || updateData.to?.coordinates) {
-      const fromCoords = updateData.from?.coordinates || route.from.coordinates;
-      const toCoords = updateData.to?.coordinates || route.to.coordinates;
-      
-      updateData.distance = calculateDistance(
-        fromCoords.latitude,
-        fromCoords.longitude,
-        toCoords.latitude,
-        toCoords.longitude
-      );
-      
-      updateData.duration = Math.round(updateData.distance * 60 / 60);
-    }
-
     const updatedRoute = await Route.findByIdAndUpdate(
       id,
       updateData,
@@ -189,17 +169,16 @@ export const deleteRoute = asyncHandler(async (req: Request, res: Response) => {
 // Search routes by cities
 export const searchRoutes = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { fromCity, toCity } = req.query;
+    const { startCity, endCity } = req.query;
 
-    if (!fromCity || !toCity) {
-      return sendBadRequest(res, 'Both fromCity and toCity are required');
+    if (!startCity || !endCity) {
+      return sendBadRequest(res, 'Both startCity and endCity are required');
     }
 
     const routes = await Route.find({
       $and: [
-        { 'from.city': { $regex: fromCity, $options: 'i' } },
-        { 'to.city': { $regex: toCity, $options: 'i' } },
-        { isActive: true },
+        { 'from.city': { $regex: startCity, $options: 'i' } },
+        { 'to.city': { $regex: endCity, $options: 'i' } },
       ],
     });
 
@@ -217,7 +196,7 @@ export const getPopularRoutes = asyncHandler(async (req: Request, res: Response)
 
     // This is a simplified version. In a real application, you would
     // calculate popularity based on booking frequency
-    const routes = await Route.find({ isActive: true })
+    const routes = await Route.find({})
       .sort({ createdAt: -1 })
       .limit(limit);
 
@@ -228,11 +207,11 @@ export const getPopularRoutes = asyncHandler(async (req: Request, res: Response)
   }
 });
 
-// Add stop to route (Admin only)
-export const addStopToRoute = asyncHandler(async (req: Request, res: Response) => {
+// Add pickup point to route (Admin only)
+export const addPickupPoint = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { stop } = req.body;
+    const { name } = req.body;
 
     const route = await Route.findById(id);
 
@@ -240,21 +219,21 @@ export const addStopToRoute = asyncHandler(async (req: Request, res: Response) =
       return sendNotFound(res, 'Route not found');
     }
 
-    route.stops.push(stop);
+    route.pickupPoints.push({ name });
     await route.save();
 
-    return sendSuccess(res, { route }, 'Stop added to route successfully');
+    return sendSuccess(res, { route }, 'Pickup point added to route successfully');
   } catch (error) {
-    logError('Add stop to route error', error);
-    return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to add stop');
+    logError('Add pickup point error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to add pickup point');
   }
 });
 
-// Remove stop from route (Admin only)
-export const removeStopFromRoute = asyncHandler(async (req: Request, res: Response) => {
+// Remove pickup point from route (Admin only)
+export const removePickupPoint = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { stopIndex } = req.body;
+    const { index } = req.body;
 
     const route = await Route.findById(id);
 
@@ -262,25 +241,25 @@ export const removeStopFromRoute = asyncHandler(async (req: Request, res: Respon
       return sendNotFound(res, 'Route not found');
     }
 
-    if (stopIndex < 0 || stopIndex >= route.stops.length) {
-      return sendBadRequest(res, 'Invalid stop index');
+    if (index < 0 || index >= route.pickupPoints.length) {
+      return sendBadRequest(res, 'Invalid pickup point index');
     }
 
-    route.stops.splice(stopIndex, 1);
+    route.pickupPoints.splice(index, 1);
     await route.save();
 
-    return sendSuccess(res, { route }, 'Stop removed from route successfully');
+    return sendSuccess(res, { route }, 'Pickup point removed from route successfully');
   } catch (error) {
-    logError('Remove stop from route error', error);
-    return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to remove stop');
+    logError('Remove pickup point error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to remove pickup point');
   }
 });
 
-// Update route status (Admin only)
-export const updateRouteStatus = asyncHandler(async (req: Request, res: Response) => {
+// Add drop point to route (Admin only)
+export const addDropPoint = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { isActive } = req.body;
+    const { name } = req.body;
 
     const route = await Route.findById(id);
 
@@ -288,15 +267,38 @@ export const updateRouteStatus = asyncHandler(async (req: Request, res: Response
       return sendNotFound(res, 'Route not found');
     }
 
-    const updatedRoute = await Route.findByIdAndUpdate(
-      id,
-      { isActive },
-      { new: true, runValidators: true }
-    );
+    route.dropPoints.push({ name });
+    await route.save();
 
-    return sendSuccess(res, { route: updatedRoute }, 'Route status updated successfully');
+    return sendSuccess(res, { route }, 'Drop point added to route successfully');
   } catch (error) {
-    logError('Update route status error', error);
-    return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to update route status');
+    logError('Add drop point error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to add drop point');
+  }
+});
+
+// Remove drop point from route (Admin only)
+export const removeDropPoint = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { index } = req.body;
+
+    const route = await Route.findById(id);
+
+    if (!route) {
+      return sendNotFound(res, 'Route not found');
+    }
+
+    if (index < 0 || index >= route.dropPoints.length) {
+      return sendBadRequest(res, 'Invalid drop point index');
+    }
+
+    route.dropPoints.splice(index, 1);
+    await route.save();
+
+    return sendSuccess(res, { route }, 'Drop point removed from route successfully');
+  } catch (error) {
+    logError('Remove drop point error', error);
+    return sendBadRequest(res, error instanceof Error ? error.message : 'Failed to remove drop point');
   }
 });

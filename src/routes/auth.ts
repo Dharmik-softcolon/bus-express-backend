@@ -172,17 +172,5 @@ router.get('/dashboard/bus-employee', (req: any, res: any) => {
   });
 });
 
-router.get('/dashboard/customer', (req: any, res: any) => {
-  const authenticatedReq = req as any;
-  if (authenticatedReq.user?.role !== 'CUSTOMER') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
-  }
-  res.json({ 
-    success: true, 
-    message: 'Customer Dashboard', 
-    role: 'CUSTOMER',
-    dashboard: 'customer'
-  });
-});
 
 export default router;

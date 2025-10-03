@@ -91,21 +91,6 @@ export const busOwnerOrBusAdmin = (req: Request, res: Response, next: NextFuncti
   next();
 };
 
-// Customer or Bus Admin middleware
-export const customerOrBusAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  const authenticatedReq = req as AuthenticatedRequest;
-  if (!authenticatedReq.user) {
-    sendUnauthorized(res, 'Access denied. User not authenticated.');
-    return;
-  }
-
-  if (authenticatedReq.user.role !== USER_ROLES.BUS_ADMIN && authenticatedReq.user.role !== USER_ROLES.CUSTOMER) {
-    sendForbidden(res, 'Access denied. Customer or Bus Admin access required.');
-    return;
-  }
-
-  next();
-};
 
 // Check if user can access resource (own resource or admin)
 export const canAccessResource = (resourceUserId: string) => {

@@ -107,11 +107,11 @@ const busSchema = new Schema<IBus>({
   },
   driver: {
     type: Schema.Types.ObjectId,
-    ref: 'Employee',
+    ref: 'User',
   },
   helper: {
     type: Schema.Types.ObjectId,
-    ref: 'Employee',
+    ref: 'User',
   },
   fuelCapacity: {
     type: Number,

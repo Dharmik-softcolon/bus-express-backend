@@ -29,7 +29,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
       email,
       password: hashedPassword,
       phone,
-      role: role || USER_ROLES.CUSTOMER,
+      role: role || USER_ROLES.BUS_EMPLOYEE,
     });
 
     // Generate tokens
