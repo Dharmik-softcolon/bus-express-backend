@@ -7,6 +7,11 @@ import {
   deleteTrip,
   updateTripStatus,
   getTripStatistics,
+  getAvailableDrivers,
+  getAvailableHelpers,
+  getAvailableBuses,
+  bulkUpdateTripStatus,
+  getTripsByBusAdmin,
 } from '../controllers/tripController';
 import { authenticate, busOwnerOrBusAdmin } from '../middleware/auth';
 import { validateRequest, paginationMiddleware } from '../middleware/validation';
@@ -30,6 +35,8 @@ router.post('/', busOwnerOrBusAdmin, [...createTripValidation, validateRequest],
 
 router.get('/', paginationMiddleware, [...getAllTripsValidation, validateRequest], getAllTrips);
 
+router.get('/bus-admin', paginationMiddleware, [...getAllTripsValidation, validateRequest], getTripsByBusAdmin);
+
 router.get('/statistics', busOwnerOrBusAdmin, [...getTripStatisticsValidation, validateRequest], getTripStatistics);
 
 router.get('/:id', [...getTripByIdValidation, validateRequest], getTripById);
@@ -44,5 +51,13 @@ router.delete('/:id', busOwnerOrBusAdmin, [...deleteTripValidation, validateRequ
 router.get('/route/:routeId', [...getAllTripsValidation, validateRequest], getAllTrips);
 
 router.get('/bus/:busId', [...getAllTripsValidation, validateRequest], getAllTrips);
+
+// Availability routes
+router.get('/available/drivers', getAvailableDrivers);
+router.get('/available/helpers', getAvailableHelpers);
+router.get('/available/buses', getAvailableBuses);
+
+// Bulk operations
+router.put('/bulk/status', busOwnerOrBusAdmin, bulkUpdateTripStatus);
 
 export default router;

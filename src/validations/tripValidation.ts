@@ -8,12 +8,23 @@ export const createTripValidation = [
     .isMongoId()
     .withMessage('Valid bus ID is required'),
   body('driver')
-    .isMongoId()
-    .withMessage('Valid driver ID is required'),
+    .optional()
+    .custom((value) => {
+      // Only validate if value is provided and not empty
+      if (value && value.trim() !== '' && !value.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new Error('Valid driver ID is required');
+      }
+      return true;
+    }),
   body('helper')
     .optional()
-    .isMongoId()
-    .withMessage('Valid helper ID is required'),
+    .custom((value) => {
+      // Only validate if value is provided and not empty
+      if (value && value.trim() !== '' && !value.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new Error('Valid helper ID is required');
+      }
+      return true;
+    }),
   body('departureTime')
     .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
     .withMessage('Valid departure time is required (HH:MM)'),
@@ -21,6 +32,7 @@ export const createTripValidation = [
     .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
     .withMessage('Valid arrival time is required (HH:MM)'),
   body('departureDate')
+    .optional()
     .isISO8601()
     .withMessage('Valid departure date is required'),
   body('pickupPoints')

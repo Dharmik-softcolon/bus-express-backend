@@ -60,7 +60,6 @@ const tripSchema = new Schema<ITrip>({
   driver: {
     type: Schema.Types.ObjectId,
     ref: 'Employee',
-    required: [true, 'Driver is required'],
   },
   helper: {
     type: Schema.Types.ObjectId,
@@ -78,8 +77,7 @@ const tripSchema = new Schema<ITrip>({
   },
   departureDate: {
     type: Date,
-    required: [true, 'Departure date is required'],
-    min: [new Date(), 'Departure date cannot be in the past'],
+    default: Date.now,
   },
   pickupPoints: [{
     name: {
