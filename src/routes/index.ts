@@ -3,6 +3,7 @@ import authRoutes from './auth';
 import busRoutes from './bus';
 import routeRoutes from './route';
 import bookingRoutes from './booking';
+import enhancedBookingRoutes from './enhancedBookingRoutes';
 import tripRoutes from './trip';
 import expenseRoutes from './expense';
 import analyticsRoutes from './analytics';
@@ -12,7 +13,7 @@ import searchRoutes from './search';
 import masterAdminRoutes from './masterAdminRoutes';
 import busOwnerRoutes from './busOwnerRoutes';
 import busAdminRoutes from './busAdminRoutes';
-import bookingManagerRoutes from './bookingManagerRoutes';
+import bookingManRoutes from './bookingManRoutes';
 import busEmployeeRoutes from './busEmployeeRoutes';
 import customerRoutes from './customerRoutes';
 
@@ -22,7 +23,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/buses', busRoutes);
 router.use('/routes', routeRoutes);
-router.use('/bookings', bookingRoutes);
+router.use('/bookings', enhancedBookingRoutes); // Use enhanced booking routes
 router.use('/trips', tripRoutes);
 router.use('/expenses', expenseRoutes);
 router.use('/analytics', analyticsRoutes);
@@ -32,7 +33,7 @@ router.use('/search', searchRoutes);
 router.use('/master-admin', masterAdminRoutes);
 router.use('/bus-owner', busOwnerRoutes);
 router.use('/bus-admin', busAdminRoutes);
-router.use('/booking-manager', bookingManagerRoutes);
+router.use('/booking-man', bookingManRoutes);
 router.use('/bus-employee', busEmployeeRoutes);
 router.use('/customer', customerRoutes);
 

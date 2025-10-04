@@ -24,7 +24,15 @@ export interface IBooking extends Document {
   paymentId?: string;
   cancellationReason?: string;
   cancelledAt?: Date;
+  cancelledBy?: mongoose.Types.ObjectId;
   refundAmount?: number;
+  refundPercentage?: number;
+  confirmedAt?: Date;
+  confirmedBy?: mongoose.Types.ObjectId;
+  completedAt?: Date;
+  completedBy?: mongoose.Types.ObjectId;
+  updatedBy?: mongoose.Types.ObjectId;
+  bookingManager?: mongoose.Types.ObjectId;
   boardingPoint: string;
   droppingPoint: string;
   createdAt: Date;
@@ -122,9 +130,40 @@ const bookingSchema = new Schema<IBooking>({
   cancelledAt: {
     type: Date,
   },
+  cancelledBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
   refundAmount: {
     type: Number,
     min: [0, 'Refund amount cannot be negative'],
+  },
+  refundPercentage: {
+    type: Number,
+    min: [0, 'Refund percentage cannot be negative'],
+    max: [100, 'Refund percentage cannot exceed 100'],
+  },
+  confirmedAt: {
+    type: Date,
+  },
+  confirmedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  completedAt: {
+    type: Date,
+  },
+  completedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  updatedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  bookingManager: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   },
   boardingPoint: {
     type: String,

@@ -21,7 +21,7 @@ import {
   createBusAdmin,
   updateBusAdmin,
   deleteBusAdmin,
-  createBookingManager,
+  createBookingMan,
   createBusEmployee,
   getBusEmployees,
   getBusEmployeeById,
@@ -102,8 +102,8 @@ router.delete('/bus-admins/:id', busOwnerOrBusAdmin, deleteBusAdmin);
 // Debug route to check user details
 router.get('/debug/user/:id', authenticate, getUserByIdForDebug);
 
-// Booking manager and bus employee management routes (Bus admin only)
-router.post('/booking-managers', busAdminOnly, [...registerValidation, validateRequest], createBookingManager);
+// Booking man and bus employee management routes (Bus admin only)
+router.post('/booking-men', busAdminOnly, [...registerValidation, validateRequest], createBookingMan);
 
 // Bus employee CRUD routes (Bus admin only)
 router.post('/bus-employees', busAdminOnly, [...registerValidation, validateRequest], createBusEmployee);

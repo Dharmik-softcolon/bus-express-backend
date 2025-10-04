@@ -15,7 +15,7 @@ export const getBusAdminDashboard = asyncHandler(async (req: Request, res: Respo
     // Get dashboard statistics
     const [
       totalBusEmployees,
-      totalBookingManagers
+      totalBookingMen
     ] = await Promise.all([
       User.countDocuments({ role: 'BUS_EMPLOYEE', createdBy: userId }),
       User.countDocuments({ role: 'BOOKING_MAN', createdBy: userId })
@@ -36,7 +36,7 @@ export const getBusAdminDashboard = asyncHandler(async (req: Request, res: Respo
       },
       statistics: {
         totalBusEmployees,
-        totalBookingManagers,
+        totalBookingMen,
         totalBuses: 0, // Will be implemented when models are available
         totalRoutes: 0,
         totalBookings: 0,
@@ -271,7 +271,7 @@ export const toggleBusEmployeeStatus = asyncHandler(async (req: Request, res: Re
   }
 });
 
-// Create booking manager
+// Create booking man
 export const createBookingManager = asyncHandler(async (req: Request, res: Response) => {
   try {
     const authenticatedReq = req as AuthenticatedRequest;

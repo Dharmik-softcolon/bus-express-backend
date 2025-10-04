@@ -33,10 +33,10 @@ router.put('/bus-employees/:id', [...updateUserByIdValidation, validateRequest],
 router.delete('/bus-employees/:id', [...getUserByIdValidation, validateRequest], deleteBusEmployee);
 router.put('/bus-employees/:id/toggle-status', [...getUserByIdValidation, validateRequest], toggleBusEmployeeStatus);
 
-// Booking manager management
-router.post('/booking-managers', [...createBookingManagerValidation, validateRequest], createBookingManager);
-router.get('/booking-managers', paginationMiddleware, [...getAllUsersValidation, validateRequest], getBookingManagers);
-router.put('/booking-managers/:id', [...updateUserByIdValidation, validateRequest], updateBookingManager);
-router.delete('/booking-managers/:id', [...getUserByIdValidation, validateRequest], deleteBookingManager);
+// Booking man management
+router.post('/booking-men', [...createBookingManagerValidation, validateRequest], createBookingManager);
+router.get('/booking-men', paginationMiddleware, [...getAllUsersValidation, validateRequest], getBookingManagers);
+router.put('/booking-men/:id', [...updateUserByIdValidation, validateRequest], updateBookingManager);
+router.delete('/booking-men/:id', [...getUserByIdValidation, validateRequest], deleteBookingManager);
 
 export default router;

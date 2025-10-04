@@ -834,8 +834,8 @@ export const createBusAdmin = asyncHandler(async (req: Request, res: Response) =
   }
 });
 
-// Create booking manager
-export const createBookingManager = asyncHandler(async (req: Request, res: Response) => {
+// Create booking man
+export const createBookingMan = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { name, email, password, phone, company, aadhaarCard, position, address, commission } = req.body;
     const authenticatedReq = req as AuthenticatedRequest;
